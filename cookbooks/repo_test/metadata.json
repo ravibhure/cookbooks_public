@@ -1,0 +1,103 @@
+{
+  "name": "repo_test",
+  "description": "Installs/Configures test",
+  "long_description": "= DESCRIPTION:\n\n= REQUIREMENTS:\n\n= ATTRIBUTES:\n\n= USAGE:\n\n",
+  "maintainer": "YOUR_COMPANY_NAME",
+  "maintainer_email": "YOUR_EMAIL",
+  "license": "All rights reserved",
+  "platforms": {
+  },
+  "dependencies": {
+    "rs_utils": ">= 0.0.0",
+    "repo": ">= 0.0.0",
+    "repo_svn": ">= 0.0.0"
+  },
+  "recommendations": {
+  },
+  "suggestions": {
+  },
+  "conflicting": {
+  },
+  "providing": {
+  },
+  "replacing": {
+  },
+  "attributes": {
+    "repo_test/repository": {
+      "display_name": "repo_test/repository",
+      "description": "repo_test/repository",
+      "default": "",
+      "recipes": [
+        "repo_test::default"
+      ],
+      "choice": [
+
+      ],
+      "calculated": false,
+      "type": "string",
+      "required": "optional"
+    },
+    "repo_test/revision": {
+      "display_name": "repo_test/revision",
+      "description": "repo_test/revision",
+      "default": "",
+      "recipes": [
+        "repo_test::default"
+      ],
+      "choice": [
+
+      ],
+      "calculated": false,
+      "type": "string",
+      "required": "optional"
+    },
+    "repo_test/provider_type": {
+      "display_name": "repo_test/provider_type",
+      "description": "repo_test/provider_type",
+      "default": "",
+      "recipes": [
+        "repo_test::default"
+      ],
+      "choice": [
+
+      ],
+      "calculated": false,
+      "type": "string",
+      "required": "optional"
+    },
+    "repo_test/svn_username": {
+      "display_name": "repo_test/svn_username",
+      "description": "repo_test/svn_username",
+      "default": "",
+      "recipes": [
+        "repo_test::default"
+      ],
+      "choice": [
+
+      ],
+      "calculated": false,
+      "type": "string",
+      "required": "optional"
+    },
+    "repo_test/svn_password": {
+      "display_name": "repo_test/svn_password",
+      "description": "repo_test/svn_password",
+      "default": "",
+      "recipes": [
+        "repo_test::default"
+      ],
+      "choice": [
+
+      ],
+      "calculated": false,
+      "type": "string",
+      "required": "optional"
+    }
+  },
+  "groupings": {
+  },
+  "recipes": {
+    "repo_test::default": "test recipe2"
+  },
+  "version": "0.0.1"
+}

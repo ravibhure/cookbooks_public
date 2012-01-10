@@ -1,0 +1,5 @@
+  set_unless[:repo_test][:repository] = ""
+  set_unless[:repo_test][:revision] = ""
+  set_unless[:repo_test][:provider_type] = ""
+  set_unless[:repo_test][:svn_username] = ""
+  set_unless[:repo_test][:svn_password] = ""
