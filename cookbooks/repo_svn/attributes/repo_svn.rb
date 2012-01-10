@@ -1,7 +1,3 @@
-#
-# Cookbook Name:: repo
-# Resource:: repo
-#
 # Copyright (c) 2010 RightScale Inc
 #
 # Permission is hereby granted, free of charge, to any person obtaining
@@ -23,16 +19,8 @@
 # OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
 # WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-actions :pull
-
-attribute :destination, :kind_of => String
-attribute :repository, :kind_of => String
-attribute :revision, :kind_of => String 
-attribute :provider_type, :kind_of => String 
-
-# Subversion only
-attribute :svn_username, :kind_of => String
-attribute :svn_password, :kind_of => String
-
-# Git only
-attribute :ssh_key, :kind_of => String
+default[:svn][:demo_repo][:repository] = nil
+default[:svn][:demo_repo][:revision] = nil
+default[:svn][:demo_repo][:username] = nil
+default[:svn][:demo_repo][:password] = nil
+default[:svn][:demo_repo][:arguments] = nil
