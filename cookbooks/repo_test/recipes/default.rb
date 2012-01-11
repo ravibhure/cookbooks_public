@@ -9,7 +9,7 @@
 
 rs_utils_marker :begin
 
-repo "test svn prov" do
+repo do
   destination "/tmp"
   repository node[:repo_test][:repository]
   revision node[:repo_test][:revision]
