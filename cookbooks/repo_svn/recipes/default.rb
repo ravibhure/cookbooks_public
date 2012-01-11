@@ -52,7 +52,7 @@ end
 # Setup all Subversion resources that have attributes in the node.
 node[:repo].each do |resource_name, entry| 
   if entry[:provider] == PROVIDER_NAME then
-  
+    log "trying to pull svn repo at: #{entry[:repository]} with branch #{entry[:branch]}"
     url = entry[:repository]
     raise "ERROR: You did not specify a repository for repo resource named #{resource_name}." unless url
     branch = (entry[:branch]) ? entry[:branch] : "HEAD"

@@ -5,6 +5,8 @@ description      "Abstract cookbook for managing source code repositories."
 long_description "Provides a chef lightweight resource called 'repo' as a Bridge to repo_svn and repo_git cookbooks."
 version          "0.0.1"
 
+depends "repo_svn"
+
 provides "resource:repo"  # not really in metadata spec yet. Format TBD.
   
   
