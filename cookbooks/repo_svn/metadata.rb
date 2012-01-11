@@ -4,6 +4,8 @@ license          IO.read(File.expand_path(File.join(File.dirname(__FILE__), '..'
 description      "Manages the Subversion version control system"
 version          "0.0.1"
 
+depends "repo"
+
 #provides "provider:repo" # not really in metadata spec yet. Format TBD.
 provides "repo"
 recipe  "repo_svn::default", "Default pattern of loading packages and resources provided"
