@@ -17,6 +17,7 @@ repo "test svn prov" do
   svn_username node[:repo_test][:svn_username]
   svn_password node[:repo_test][:svn_password]
   action :pull
+  provider "repo_svn_default"
 end
 
 rs_utils_marker :end
