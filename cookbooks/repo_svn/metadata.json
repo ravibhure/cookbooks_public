@@ -1,126 +1,118 @@
 {
+  "name": "repo_svn",
+  "description": "Manages the Subversion version control system",
+  "long_description": "",
+  "maintainer": "RightScale, Inc.",
+  "maintainer_email": "support@rightscale.com",
+  "license": "Copyright RightScale, Inc. All rights reserved.  All access and use subject to the RightScale Terms of Service available at http://www.rightscale.com/terms.php and, if applicable, other agreements such as a RightScale Master Subscription Agreement.\n",
+  "platforms": {
+  },
+  "dependencies": {
+  },
+  "recommendations": {
+  },
+  "suggestions": {
+  },
+  "conflicting": {
+  },
+  "providing": {
+    "repo": ">= 0.0.0"
+  },
+  "replacing": {
+  },
+  "attributes": {
+    "repo/default/provider": {
+      "display_name": "Repository Provider Type",
+      "description": "",
+      "default": "repo_svn",
+      "choice": [
+
+      ],
+      "calculated": false,
+      "type": "string",
+      "required": "optional",
+      "recipes": [
+
+      ]
+    },
+    "repo/default/repository": {
+      "display_name": "Repository Url",
+      "description": "The URL to subversion repository. Ex. http://svn.github.com/schacon/cowsay.git",
+      "required": "required",
+      "choice": [
+
+      ],
+      "calculated": false,
+      "type": "string",
+      "recipes": [
+
+      ]
+    },
+    "repo/default/branch": {
+      "display_name": "Revision/Branch/Tag",
+      "description": "",
+      "required": "optional",
+      "choice": [
+
+      ],
+      "calculated": false,
+      "type": "string",
+      "recipes": [
+
+      ]
+    },
+    "repo/default/username": {
+      "display_name": "User Name",
+      "description": "",
+      "default": "",
+      "required": "optional",
+      "choice": [
+
+      ],
+      "calculated": false,
+      "type": "string",
+      "recipes": [
+
+      ]
+    },
+    "repo/default/password": {
+      "display_name": "Password",
+      "description": "",
+      "default": "",
+      "required": "optional",
+      "choice": [
+
+      ],
+      "calculated": false,
+      "type": "string",
+      "recipes": [
+
+      ]
+    },
+    "repo/default/arguments": {
+      "display_name": "Arguments",
+      "description": "",
+      "default": "",
+      "required": "optional",
+      "choice": [
+
+      ],
+      "calculated": false,
+      "type": "string",
+      "recipes": [
+
+      ]
+    }
+  },
+  "groupings": {
+    "repo/default": {
+      "display_name": "Subversion Client Default Settings",
+      "description": "Settings for managing a Subversion source repository",
+      "databag": true
+    }
+  },
   "recipes": {
     "repo_svn::default": "Default pattern of loading packages and resources provided"
   },
-  "groupings": {
-    "repo\/default": {
-      "databag": true,
-      "description": "Settings for managing a Subversion source repository",
-      "display_name": "Subversion Client Default Settings"
-    }
-  },
-  "long_description": "",
-  "recommendations": {
-
-  },
-  "dependencies": {
-
-  },
-  "maintainer": "RightScale, Inc.",
-  "suggestions": {
-
-  },
-  "description": "Manages the Subversion version control system",
-  "maintainer_email": "support@rightscale.com",
-  "name": "repo_svn",
-  "conflicting": {
-
-  },
-  "providing": {
-    "provider:repo": [
-
-    ]
-  },
-  "platforms": {
-
-  },
-  "version": "0.0.1",
-  "attributes": {
-    "repo\/default\/username": {
-      "calculated": false,
-      "default": "",
-      "type": "string",
-      "choice": [
-
-      ],
-      "description": "",
-      "display_name": "User Name",
-      "required": "optional",
-      "recipes": [
-
-      ]
-    },
-    "repo\/default\/branch": {
-      "calculated": false,
-      "type": "string",
-      "choice": [
-
-      ],
-      "description": "",
-      "display_name": "Revision\/Branch\/Tag",
-      "required": "optional",
-      "recipes": [
-
-      ]
-    },
-    "repo\/default\/repository": {
-      "calculated": false,
-      "type": "string",
-      "choice": [
-
-      ],
-      "description": "The URL to subversion repository. Ex. http:\/\/svn.github.com\/schacon\/cowsay.git",
-      "display_name": "Repository Url",
-      "required": "required",
-      "recipes": [
-
-      ]
-    },
-    "repo\/default\/arguments": {
-      "calculated": false,
-      "default": "",
-      "type": "string",
-      "choice": [
-
-      ],
-      "description": "",
-      "display_name": "Arguments",
-      "required": "optional",
-      "recipes": [
-
-      ]
-    },
-    "repo\/default\/password": {
-      "calculated": false,
-      "default": "",
-      "type": "string",
-      "choice": [
-
-      ],
-      "description": "",
-      "display_name": "Password",
-      "required": "optional",
-      "recipes": [
-
-      ]
-    },
-    "repo\/default\/provider": {
-      "calculated": false,
-      "default": "repo_svn",
-      "type": "string",
-      "choice": [
-
-      ],
-      "description": "",
-      "display_name": "Repository Provider Type",
-      "recipes": [
-
-      ],
-      "required": "optional"
-    }
-  },
-  "replacing": {
-
-  },
-  "license": "Copyright (c) 2010 RightScale, Inc.\n\nPermission is hereby granted, free of charge, to any person obtaining\na copy of this software and associated documentation files (the\n'Software'), to deal in the Software without restriction, including\nwithout limitation the rights to use, copy, modify, merge, publish,\ndistribute, sublicense, and\/or sell copies of the Software, and to\npermit persons to whom the Software is furnished to do so, subject to\nthe following conditions:\n\nThe above copyright notice and this permission notice shall be\nincluded in all copies or substantial portions of the Software.\n\nTHE SOFTWARE IS PROVIDED 'AS IS', WITHOUT WARRANTY OF ANY KIND,\nEXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF\nMERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.\nIN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY\nCLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,\nTORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE\nSOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.\n"
+  "version": "0.0.1"
 }
