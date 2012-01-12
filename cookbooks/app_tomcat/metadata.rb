@@ -7,6 +7,7 @@ version          "0.1.1"
 
 depends "app"
 depends "db_mysql"
+depends "db_postgres"
 depends "repo_git"
 depends "rs_utils"
 
@@ -19,6 +20,14 @@ recipe  "app_tomcat::setup_monitoring", "Install collectd monitoring for tomcat.
 attribute "tomcat",
   :display_name => "Tomcat Application Settings",
   :type => "hash"
+
+attribute "tomcat/db_adapter",
+  :display_name => "Database Adapter",
+  :description => "Database adapter to connect to Database. (Ex: mysql)",
+  :default => "mysql",
+  :choice => [ "mysql", "postgres" ],
+  :recipes => [ "app_tomcat::default", "app_tomcat::setup_db_connection" ]
+  
 #
 # optional attributes
 #
@@ -94,3 +103,4 @@ attribute "tomcat/java/xmx",
   :description => "The java Xmx argument (i.e. 512m)",
   :required => "optional",
   :recipes => [ "app_tomcat::setup_tomcat_configs" ]
+

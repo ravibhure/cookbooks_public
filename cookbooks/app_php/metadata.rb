@@ -8,6 +8,7 @@ version          "0.0.1"
 depends "app"
 depends "web_apache"
 depends "db_mysql"
+depends "db_postgres"
 depends "repo_git"
 depends "rs_utils"
  
@@ -19,6 +20,14 @@ recipe  "app_php::setup_php_application_vhost", "Set up the application vhost on
 attribute "php",
   :display_name => "PHP Application Settings",
   :type => "hash"
+
+attribute "php/db_adapter",
+  :display_name => "Database Adapter",
+  :description => "Database adapter to connect to Database. (Ex: mysql)",
+  :default => "postgres",
+  :choice => [ "mysql", "postgres" ],
+  :recipes => [ "app_php::default" ]
+
 #
 # optional attributes
 #
