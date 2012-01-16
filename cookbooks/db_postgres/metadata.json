@@ -43,12 +43,11 @@
       "display_name": "General Database Options"
     },
     "db_postgres/database_name": {
-      "required": "optional",
+      "required": "required",
       "calculated": false,
       "choice": [
-        "postgres"
+
       ],
-      "default": "postgres",
       "type": "string",
       "recipes": [
         "db_postgres::default"
