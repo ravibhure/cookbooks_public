@@ -11,21 +11,31 @@ rs_utils_marker :begin
 #
 # Make sure config dir exists
 directory File.join(node[:web_apache][:docroot], "config") do
-  recursive true 
+  recursive true
   owner node[:php][:app_user]
   group node[:php][:app_user]
 end
 
 db_adapter = node[:php][:db_adapter]
 # runs only on db_adapter selection
-mydef = "db_#{db_adapter}_connect_app"
+if db_adapter == "mysql"
   # Tell MySQL to fill in our connection template
-  mydef File.join(node[:web_apache][:docroot], "config", "db.php") do
+  db_mysql_connect_app File.join(node[:web_apache][:docroot], "config", "db.php") do
     template "db.php.erb"
     cookbook "app_php"
     database node[:php][:db_schema_name]
     owner node[:php][:app_user]
     group node[:php][:app_user]
   end
+else
+  # Tell PostgreSQL to fill in our connection template
+  db_postgres_connect_app File.join(node[:web_apache][:docroot], "config", "db.php") do
+    template "db.php.erb"
+    cookbook "app_php"
+    database node[:php][:db_schema_name]
+    owner node[:php][:app_user]
+    group node[:php][:app_user]
+  end
+end
 
 rs_utils_marker :end
