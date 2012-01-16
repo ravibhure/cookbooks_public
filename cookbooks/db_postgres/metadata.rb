@@ -37,6 +37,6 @@ attribute "db_postgres/slave/sync",
 
 attribute "db_postgres/database_name",
   :display_name => "Database Name",
-  :description => "Enter the name of the PostgreSQL database for setting up monitoring. Ex: postgres",
+  :description => "Enter the name of the PostgreSQL database for setting up postgresql database monitoring. Ex: mydbname",
   :required => true,
   :recipes => [ "db_postgres::default"]

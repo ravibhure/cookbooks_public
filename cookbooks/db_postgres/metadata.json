@@ -53,7 +53,7 @@
         "db_postgres::default"
       ],
       "display_name": "Database Name",
-      "description": "Enter the name of the PostgreSQL database for setting up monitoring. Ex: postgres"
+      "description": "Enter the name of the PostgreSQL database for setting up postgresql database monitoring. Ex: mydbname"
     },
     "db_postgres/server_usage": {
       "required": "optional",
