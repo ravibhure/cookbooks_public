@@ -55,7 +55,7 @@ module RightScale
         # Configure the replication parameters into pg_hba.conf.
         def self.configure_pg_hba(node)
           File.open("/var/lib/pgsql/9.1/data/pg_hba.conf", "a") do |f|
-            f.puts("host    replication     #{node[:db][:replication][:user]}          0.0.0.0/0            trust")
+            f.puts("host    replication     #{node[:db][:replication][:user]}          0.0.0.0/0            	trust")
           end
           return $? == 0
         end
@@ -83,7 +83,7 @@ module RightScale
               Chef::Log.info info_msg
               result = nil
               if timeout
-                  SystemTimer.timeout_after(timeout) do
+                SystemTimer.timeout_after(timeout) do
                   conn = PGconn.open("localhost", nil, nil, nil, nil, "postgres", nil)
                   result = conn.exec(query)
                 end
@@ -101,10 +101,13 @@ module RightScale
           end
         end
 
+
+        # Reconfigure the replication parameters.
+
         def self.reconfigure_replication_info(newmaster_host = nil, rep_user = nil, rep_pass = nil, app_name = nil)
           File.open("/var/lib/pgsql/9.1/data/recovery.conf", File::CREAT|File::TRUNC|File::RDWR) do |f|
-          f.puts("standby_mode='on'\nprimary_conninfo='host=#{newmaster_host} user=#{rep_user} password=#{rep_pass} application_name=#{app_name}'\ntrigger_file='/var/lib/pgsql/9.1/data/recovery.trigger'")
-          `chown postgres:postgres /var/lib/pgsql/9.1/data/recovery.conf`
+            f.puts("standby_mode='on'\nprimary_conninfo='host=#{newmaster_host} user=#{rep_user} password=#{rep_pass} application_name=#{app_name}'\ntrigger_file='/var/lib/pgsql/9.1/data/recovery.trigger'")
+	 `chown postgres:postgres /var/lib/pgsql/9.1/data/recovery.conf` 
           end
           return $? == 0
         end
@@ -116,7 +119,7 @@ module RightScale
           end
           return $? == 0
         end
-
+        
         def self.rsync_db(newmaster_host = nil, rep_user = nil)
           puts `su - postgres -c "env PGCONNECT_TIMEOUT=30 /usr/pgsql-9.1/bin/pg_basebackup -D /var/lib/pgsql/9.1/backups -U #{rep_user} -h #{newmaster_host}"`
           puts `su - postgres -c "rsync -av /var/lib/pgsql/9.1/backups/ /var/lib/pgsql/9.1/data --exclude postgresql.conf --exclude pg_hba.conf"`
@@ -129,47 +132,6 @@ module RightScale
           end
         end
 
-        def self.reconfigure_replication(hostname = 'localhost', newmaster_host = nil, newmaster_logfile=nil, newmaster_position=nil)
-# These must be passed and not read from a file
-#          master_info = RightScale::Database::PostgreSQL::Helper.load_replication_info(node)
-#          newmaster_host = master_info['Master_IP']
-#          newmaster_logfile = master_info['File']
-#          newmaster_position = master_info['Position']
-          Chef::Log.info "Configuring with #{newmaster_host} logfile #{newmaster_logfile} position #{newmaster_position}"
-
-          # legacy did this twice, looks like slave stop can fail once (only throws warning if slave is already stopped)
-          RightScale::Database::PostgreSQL::Helper.do_query("STOP SLAVE", hostname)
-          RightScale::Database::PostgreSQL::Helper.do_query("STOP SLAVE", hostname)
-
-          cmd = "CHANGE MASTER TO MASTER_HOST='#{newmaster_host}'"
-          cmd = cmd +          ", MASTER_LOG_FILE='#{newmaster_logfile}'"
-          cmd = cmd +          ", MASTER_LOG_POS=#{newmaster_position}"
-          Chef::Log.info "Reconfiguring replication on localhost: \n#{cmd}"
-          # don't log replication user and password
-          cmd = cmd +          ", MASTER_USER='#{node[:db][:replication][:user]}'"
-          cmd = cmd +          ", MASTER_PASSWORD='#{node[:db][:replication][:password]}'"
-          RightScale::Database::PostgreSQL::Helper.do_query(cmd, hostname, username)
-
-          RightScale::Database::PostgreSQL::Helper.do_query("START SLAVE", hostname, username)
-          started=false
-          10.times do
-            row = RightScale::Database::PostgreSQL::Helper.do_query("SHOW SLAVE STATUS", hostname)
-            slave_IO = row["Slave_IO_Running"].strip.downcase
-            slave_SQL = row["Slave_SQL_Running"].strip.downcase
-            if( slave_IO == "yes" and slave_SQL == "yes" ) then
-              started=true
-              break
-            else
-              Chef::Log.info "threads at new slave not started yet...waiting a bit more..."
-              sleep 2
-            end
-          end
-          if( started )
-            Chef::Log.info "Slave threads on the master are up and running."
-          else
-            Chef::Log.info "Error: slave threads in the master do not seem to be up and running..."
-          end
-        end
       end
     end
   end
