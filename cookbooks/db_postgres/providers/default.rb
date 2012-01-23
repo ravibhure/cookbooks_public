@@ -254,7 +254,7 @@ action :install_server do
   # 1/3 of the overall system file max should be large enough.  The percentage can be
   # adjusted if necessary.
   #
-  postgres_file_ulimit = #{node[:db_postgres][:tunable][:ulimit]}
+  postgres_file_ulimit = node[:db_postgres][:tunable][:ulimit]
 
   template "/etc/security/limits.d/postgres.limits.conf" do
     source "postgres.limits.conf.erb"
