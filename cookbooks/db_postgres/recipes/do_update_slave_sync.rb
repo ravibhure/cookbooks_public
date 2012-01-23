@@ -9,6 +9,8 @@
 #
 rs_utils_marker :begin
 
+raise "Initialize slave to master in 'sync' state [skipped], not found the valid user input" if node[:db_postgres][:slave][:sync] == ""
+
 #to_enable = new_resource.enable
 to_enable = (node[:db_postgres][:slave][:sync] == "enable") ? true : false
 
@@ -50,7 +52,10 @@ elsif node[:db_postgres][:slave][:sync] == "disable"
   end
 
 else
-  raise "Initialize slave to master in 'sync' state [skipped], not found the valid user input"
+  #raise "Initialize slave to master in 'sync' state [skipped], not found the valid user input"
+  log "WARNING: Skipping postgresql slave monitoring on master server, not selected any valid input.." do
+    level :warn
+  end
 
 end
 
