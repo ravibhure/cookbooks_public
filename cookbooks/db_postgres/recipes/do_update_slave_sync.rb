@@ -7,8 +7,6 @@
 
 # == Request postgresql.conf updated
 #
-include RightScale::Database::PostgreSQL::Helper
-
 rs_utils_marker :begin
 
 raise "Skipping to postgresql update slave sync mode on master server, not selected any valid input enable/disable" if node[:db_postgres][:slave][:sync] == ""
@@ -47,10 +45,13 @@ elsif node[:db_postgres][:slave][:sync] == "disable"
 
   # Reload postgresql to read new updated postgresql.conf
   Chef::Log.info "Reload postgresql to read new updated postgresql.conf"
-  RightScale::Database::PostgreSQL::Helper.do_query('select pg_reload_conf()')
-  #execute "/etc/init.d/postgresql-#{node[:db_postgres][:version]} reload" do
+  #service "/etc/init.d/postgresql-#{node[:db_postgres][:version]} reload" do
   #  command "/etc/init.d/postgresql-#{node[:db_postgres][:version]} reload" 
   #end
+  service "postgresql-#{node[:db_postgres][:version]}" do
+    action :reload
+  end
+
 
 else
   log "WARNING: Skipping to postgresql update slave sync mode on master server, not selected any valid user input enable/disable" do
