@@ -457,6 +457,9 @@ end
 
 
 action :setup_slave_monitoring do
+  service "collectd" do
+    action :nothing
+  end
 
   # Now setup monitoring for slave replication, hard to define the lag, we are trying to get master/slave sync health status
 
@@ -470,6 +473,7 @@ action :setup_slave_monitoring do
   # add a collectd config file for the pg_cluster_status script with the exec plugin and restart collectd if necessary
   template ::File.join(node[:rs_utils][:collectd_plugin_dir], 'pg_cluster_status.conf') do
     source "pg_cluster_status_exec.erb"
+    notifies :restart, resources(:service => "collectd")
     cookbook 'db_postgres'
   end
 
@@ -483,6 +487,7 @@ action :setup_slave_monitoring do
   # add a collectd config file for the check_hot_standby_delay script with the exec plugin and restart collectd if necessary
   template ::File.join(node[:rs_utils][:collectd_plugin_dir], 'check_hot_standby_delay.conf') do
     source "check_hot_standby_delay_exec.erb"
+    notifies :restart, resources(:service => "collectd")
     cookbook 'db_postgres'
   end
 
@@ -498,10 +503,7 @@ action :setup_slave_monitoring do
     end
   end
 
-  # Restart collectd after all done to run monitoring scripts on slave
-  execute "/etc/init.d/collectd restart"
-
-end  
+end
 
 action :generate_dump_file do
 
