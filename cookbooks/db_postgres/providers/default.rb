@@ -456,7 +456,7 @@ action :setup_monitoring do
 end
 
 
-action :setup_slave_monitoring
+action :setup_slave_monitoring do
 
   # Now setup monitoring for slave replication, hard to define the lag, we are trying to get master/slave sync health status
 
