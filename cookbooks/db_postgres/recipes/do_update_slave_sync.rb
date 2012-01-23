@@ -34,19 +34,19 @@ elsif node[:db_postgres][:slave][:sync] == "disable"
   end
 
   # Setup pg_hba.conf
-  template "#{node[:db_postgres][:confdir]}/pg_hba.conf" do
-    source "pg_hba.conf.erb"
+  cookbook_file ::File.join(node[:db_postgres][:confdir], 'pg_hba.conf') do
+    source "pg_hba.conf"
     owner "postgres"
     group "postgres"
     mode "0644"
     cookbook 'db_postgres'
   end
-  
+
   # Reload postgresql to read new updated postgresql.conf
   Chef::Log.info "Reload postgresql to read new updated postgresql.conf"
   #RightScale::Database::PostgreSQL::Helper.do_query('select pg_reload_conf()')
-  execute "/etc/init.d/postgresql-9.1 reload" do
-    command "/etc/init.d/postgresql-9.1 reload" 
+  execute "/etc/init.d/postgresql-#{node[:db_postgres][:version]} reload" do
+    command "/etc/init.d/postgresql-#{node[:db_postgres][:version]} reload" 
   end
 
 else

@@ -77,7 +77,7 @@ action :firewall_update do
 end
 
 action :write_backup_info do
-    File_position = `/usr/pgsql-9.1/bin/pg_controldata /var/lib/pgsql/9.1/data/ | grep "Latest checkpoint location:" | awk '{print $NF}'`
+    File_position = `#{node[:db_postgres][:bindir]}/pg_controldata #{node[:db_postgres][:datadir]} | grep "Latest checkpoint location:" | awk '{print $NF}'`
     masterstatus = Hash.new
     masterstatus['Master_IP'] = node[:db][:current_master_ip]
     masterstatus['Master_instance_uuid'] = node[:db][:current_master_uuid]
@@ -162,7 +162,7 @@ action :install_client do
   # == Install PostgreSQL client gem
   gem_package("pg") do
     gem_binary("/opt/rightscale/sandbox/bin/gem")
-    options("-- --with-pg-config=/usr/pgsql-9.1/bin/pg_config")
+    options("-- --with-pg-config=#{node[:db_postgres][:bindir]}/pg_config")
   end
 end
 
@@ -197,22 +197,22 @@ action :install_server do
   #  `yum -y localinstall #{pgcontribpkg}`
 
 
-  service "postgresql-9.1" do
-    #service_name value_for_platform([ "centos", "redhat", "suse" ] => {"default" => "postgresql-9.1"}, "default" => "postgresql-9.1")
+  service "postgresql-#{node[:db_postgres][:version]}" do
+    #service_name value_for_platform([ "centos", "redhat", "suse" ] => {"default" => "postgresql-#{node[:db_postgres][:version]}"}, "default" => "postgresql-#{node[:db_postgres][:version]}")
     supports :status => true, :restart => true, :reload => true
     action :stop
   end
 
   # Initialize PostgreSQL server and create system tables
   touchfile = ::File.expand_path "~/.postgresql_installed"
-  execute "/etc/init.d/postgresql-9.1 initdb ; touch #{touchfile}" do
+  execute "/etc/init.d/postgresql-#{node[:db_postgres][:version]} initdb ; touch #{touchfile}" do
     creates touchfile
   end
   
   # == Configure system for PostgreSQL
   #
   # Stop PostgreSQL
-  service "postgresql-9.1" do
+  service "postgresql-#{node[:db_postgres][:version]}" do
     supports :status => true, :restart => true, :reload => true
     action :stop
   end
@@ -240,9 +240,8 @@ action :install_server do
 
   # Setup pg_hba.conf
   # pg_hba_source = "pg_hba.conf.erb"
-
-  template value_for_platform([ "centos", "redhat", "suse" ] => {"default" => "#{node[:db_postgres][:confdir]}/pg_hba.conf"}, "default" => "#{node[:db_postgres][:confdir]}/pg_hba.conf") do
-    source "pg_hba.conf.erb"
+  cookbook_file ::File.join(node[:db_postgres][:confdir], 'pg_hba.conf') do
+    source "pg_hba.conf"
     owner "postgres"
     group "postgres"
     mode "0644"
@@ -273,7 +272,7 @@ action :install_server do
 
   # == Start PostgreSQL
   #
-  service "postgresql-9.1" do
+  service "postgresql-#{node[:db_postgres][:version]}" do
     # supports :status => true, :restart => true, :reload => true
     action :start
   end
@@ -368,48 +367,8 @@ RightScale::Database::PostgreSQL::Helper.reconfigure_replication_info(newmaster_
     end
   end
 
-  # Now setup monitoring for slave replication, hard to define the lag, we are trying to get master/slave sync health status
-
-  # install the pg_cluster_status collectd script into the collectd library plugins directory
-  cookbook_file ::File.join(node[:rs_utils][:collectd_lib], "plugins", 'pg_cluster_status') do
-    source "pg_cluster_status"
-    mode "0755"
-    cookbook 'db_postgres'
-  end
-
-  # add a collectd config file for the pg_cluster_status script with the exec plugin and restart collectd if necessary
-  template ::File.join(node[:rs_utils][:collectd_plugin_dir], 'pg_cluster_status.conf') do
-    source "pg_cluster_status_exec.erb"
-    cookbook 'db_postgres'
-  end
-
-  # install the check_hot_standby_delay collectd script into the collectd library plugins directory
-  cookbook_file ::File.join(node[:rs_utils][:collectd_lib], "plugins", 'check_hot_standby_delay') do
-    source "check_hot_standby_delay"
-    mode "0755"
-    cookbook 'db_postgres'
-  end
-
-  # add a collectd config file for the check_hot_standby_delay script with the exec plugin and restart collectd if necessary
-  template ::File.join(node[:rs_utils][:collectd_plugin_dir], 'check_hot_standby_delay.conf') do
-    source "check_hot_standby_delay_exec.erb"
-    cookbook 'db_postgres'
-  end
-
-  # Setting pg_state and pg_data types for pg slave monitoring into types.db
-  ruby_block "add_collectd_gauges" do
-    block do
-      types_file = ::File.join(node[:rs_utils][:collectd_share], 'types.db')
-      typesdb = IO.read(types_file)
-      unless typesdb.include?('pg_data') && typesdb.include?('pg_state')
-        typesdb += "\npg_data                 value:GAUGE:0:9223372036854775807\npg_state                value:GAUGE:0:65535"
-        ::File.open(types_file, "w") { |f| f.write(typesdb) }
-      end
-    end
-  end
-
-  # Restart collectd after all done to run monitoring scripts on slave
-  execute "/etc/init.d/collectd restart"
+  # Setup slave monitoring
+  action_setup_slave_monitoring
 
 end
 
@@ -495,6 +454,54 @@ action :setup_monitoring do
 
   end
 end
+
+
+action :setup_slave_monitoring
+
+  # Now setup monitoring for slave replication, hard to define the lag, we are trying to get master/slave sync health status
+
+  # install the pg_cluster_status collectd script into the collectd library plugins directory
+  cookbook_file ::File.join(node[:rs_utils][:collectd_lib], "plugins", 'pg_cluster_status') do
+    source "pg_cluster_status"
+    mode "0755"
+    cookbook 'db_postgres'
+  end
+
+  # add a collectd config file for the pg_cluster_status script with the exec plugin and restart collectd if necessary
+  template ::File.join(node[:rs_utils][:collectd_plugin_dir], 'pg_cluster_status.conf') do
+    source "pg_cluster_status_exec.erb"
+    cookbook 'db_postgres'
+  end
+
+  # install the check_hot_standby_delay collectd script into the collectd library plugins directory
+  cookbook_file ::File.join(node[:rs_utils][:collectd_lib], "plugins", 'check_hot_standby_delay') do
+    source "check_hot_standby_delay"
+    mode "0755"
+    cookbook 'db_postgres'
+  end
+
+  # add a collectd config file for the check_hot_standby_delay script with the exec plugin and restart collectd if necessary
+  template ::File.join(node[:rs_utils][:collectd_plugin_dir], 'check_hot_standby_delay.conf') do
+    source "check_hot_standby_delay_exec.erb"
+    cookbook 'db_postgres'
+  end
+
+  # Setting pg_state and pg_data types for pg slave monitoring into types.db
+  ruby_block "add_collectd_gauges" do
+    block do
+      types_file = ::File.join(node[:rs_utils][:collectd_share], 'types.db')
+      typesdb = IO.read(types_file)
+      unless typesdb.include?('pg_data') && typesdb.include?('pg_state')
+        typesdb += "\npg_data                 value:GAUGE:0:9223372036854775807\npg_state                value:GAUGE:0:65535"
+        ::File.open(types_file, "w") { |f| f.write(typesdb) }
+      end
+    end
+  end
+
+  # Restart collectd after all done to run monitoring scripts on slave
+  execute "/etc/init.d/collectd restart"
+
+end  
 
 action :generate_dump_file do
 
