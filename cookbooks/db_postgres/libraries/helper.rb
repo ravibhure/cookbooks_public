@@ -54,8 +54,8 @@ module RightScale
 
         # Configure the replication parameters into pg_hba.conf.
         def self.configure_pg_hba(node)
-          File.open("#{node[:db_postgres][:datadir]}/pg_hba.conf", "a") do |f|
-            f.puts("host    replication     #{node[:db][:replication][:user]}          0.0.0.0/0            	trust")
+          File.open("/var/lib/pgsql/9.1/data/pg_hba.conf", "a") do |f|
+            f.puts("host replication #{node[:db][:replication][:user]} 0.0.0.0/0 trust")
           end
           return $? == 0
         end
@@ -105,29 +105,29 @@ module RightScale
         # Reconfigure the replication parameters.
 
         def self.reconfigure_replication_info(newmaster_host = nil, rep_user = nil, rep_pass = nil, app_name = nil)
-          File.open("#{node[:db_postgres][:datadir]}/recovery.conf", File::CREAT|File::TRUNC|File::RDWR) do |f|
-            f.puts("standby_mode='on'\nprimary_conninfo='host=#{newmaster_host} user=#{rep_user} password=#{rep_pass} application_name=#{app_name}'\ntrigger_file='#{node[:db_postgres][:datadir]}/recovery.trigger'")
-	 `chown postgres:postgres #{node[:db_postgres][:datadir]}/recovery.conf` 
+          File.open("/var/lib/pgsql/9.1/data/recovery.conf", File::CREAT|File::TRUNC|File::RDWR) do |f|
+            f.puts("standby_mode='on'\nprimary_conninfo='host=#{newmaster_host} user=#{rep_user} password=#{rep_pass} application_name=#{app_name}'\ntrigger_file='/var/lib/pgsql/9.1/data/recovery.trigger'")
+`chown postgres:postgres /var/lib/pgsql/9.1/data/recovery.conf`
           end
           return $? == 0
         end
 
         # Configure the replication parameters into pg_hba.conf.
         def self.configure_postgres_conf(node)
-          File.open("#{node[:db_postgres][:datadir]}/postgresql.conf", "a") do |f|
+          File.open("/var/lib/pgsql/9.1/data/postgresql.conf", "a") do |f|
             f.puts("synchronous_standby_names = '*'\nsynchronous_commit = on")
           end
           return $? == 0
         end
         
         def self.rsync_db(newmaster_host = nil, rep_user = nil)
-          puts `su - postgres -c "env PGCONNECT_TIMEOUT=30 #{node[:db_postgres][:bindir]}/pg_basebackup -D #{node[:db_postgres][:basedir]}/backups -U #{rep_user} -h #{newmaster_host}"`
-          puts `su - postgres -c "rsync -av #{node[:db_postgres][:basedir]}/backups/ #{node[:db_postgres][:datadir]} --exclude postgresql.conf --exclude pg_hba.conf"`
+          puts `su - postgres -c "env PGCONNECT_TIMEOUT=30 /usr/pgsql-9.1/bin/pg_basebackup -D /var/lib/pgsql/9.1/backups -U #{rep_user} -h #{newmaster_host}"`
+          puts `su - postgres -c "rsync -av /var/lib/pgsql/9.1/backups/ /var/lib/pgsql/9.1/data --exclude postgresql.conf --exclude pg_hba.conf"`
           return $? == 0
         end
 
         def self.write_trigger(node)
-          File.open("#{node[:db_postgres][:datadir]}/recovery.trigger", File::CREAT|File::TRUNC|File::RDWR) do |f|
+          File.open("/var/lib/pgsql/9.1/data/recovery.trigger", File::CREAT|File::TRUNC|File::RDWR) do |f|
             f.puts(" ")
           end
         end

@@ -50,7 +50,7 @@ elsif node[:db_postgres][:slave][:sync] == "disable"
   end
 
 else
-  log "Initialize slave to master in 'sync' state [skipped]"
+  raise "Initialize slave to master in 'sync' state [skipped], not found the valid user input"
 
 end
 
