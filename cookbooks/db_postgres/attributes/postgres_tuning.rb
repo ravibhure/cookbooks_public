@@ -49,7 +49,7 @@ usage = 1 # Dedicated server
 usage = 0.5 if db_postgres[:server_usage] == :shared
 
 # Ohai returns total in KB.  Set GB so X*GB can be used in conditional
-GB=1024*1024
+# GB=1024*1024
 
 mem = memory[:total].to_i/1024
 Chef::Log.info("Auto-tuning PostgreSQL parameters.  Total memory: #{mem}M")
