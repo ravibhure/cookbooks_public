@@ -11,7 +11,9 @@ depends "rs_utils"
 depends "block_device"
 
 recipe  "db_postgres::default", "Runs the client 'db::install_client' recipes."
-recipe  "db_postgres::do_update_slave_sync", "Runs the client 'db_postgres::do_update_slave_sync' recipe to setup master config for replication"
+recipe  "db_postgres::do_set_slave_sync_mode", "Runs the 'db_postgres::do_set_slave_sync_mode' recipe to setup master sync mode for replication"
+recipe  "db_postgres::do_set_slave_async_mode", "Runs the 'db_postgres::do_set_slave_async_mode' recipe to setup master async mode for replication"
+recipe  "db_postgres::do_show_slave_sync_mode", "Runs the 'db_postgres::do_show_slave_mode' recipe to show the status of slave syncing state"
 
 attribute "db_postgres",
   :display_name => "General Database Options",
@@ -27,13 +29,6 @@ attribute "db_postgres/server_usage",
   ],
   :choice => ["shared", "dedicated"],
   :default => "dedicated"
-
-attribute "db_postgres/slave/sync",
-  :display_name => "Slave Sync State",
-  :description => "Enables or Disables Slave sync state on Master, if enable - slave connect with master in 'sync' state, otherwise in 'async' state. To check the state of slave, run query 'select application_name,state,sync_priority,sync_state from pg_stat_replication;' on master.",
-  :choice => ["enable", "disable"],
-  :default => "disable",
-  :recipes => [ "db_postgres::do_update_slave_sync" ]
 
 attribute "db_postgres/database_name",
   :display_name => "Database Name",

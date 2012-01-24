@@ -22,7 +22,7 @@ case node[:platform]
        package p
      end
     else
-     include_recipe "db_postgres::install_client"
+     include_recipe "db::install_client"
     end     
     #Fixing  centos root certificate authority issues
     #Backup old certs
