@@ -168,8 +168,9 @@ end
 
 action :install_server do
 
+  
   touchfile = ::File.expand_path "~/.postgresql_installed"
-  not_if { ::File.exists?(touchfile) }
+  raise "Skipping the action" if File.exists?(touchfile)
 
   # PostgreSQL server depends on PostgreSQL client
   action_install_client
@@ -190,15 +191,6 @@ action :install_server do
       provider Chef::Provider::Package::Rpm 
     end
   end
-
-  # Install PostgreSQL 9.1 server rpm
-  #  pgserverrpm = ::File.join(::File.dirname(__FILE__), "..", "files", "centos", "postgresql91-server-9.1.1-1PGDG.rhel5.#{arch}.rpm")
-  #  `yum -y localinstall #{pgserverrpm}`
-
-  # Install PostgreSQL contrib rpm
-  #   pgcontribpkg =  ::File.join(::File.dirname(__FILE__), "..", "files", "centos", "postgresql91-contrib-9.1.1-1PGDG.rhel5.#{arch}.rpm")
-  #  `yum -y localinstall #{pgcontribpkg}`
-
 
   service "postgresql-#{node[:db_postgres][:version]}" do
     #service_name value_for_platform([ "centos", "redhat", "suse" ] => {"default" => "postgresql-#{node[:db_postgres][:version]}"}, "default" => "postgresql-#{node[:db_postgres][:version]}")
