@@ -221,14 +221,14 @@ action :install_server do
   # Setup postgresql.conf
   # template_source = "postgresql.conf.erb"
    
-  touchfile = ::File.expand_path "~/.postgresql_config.done"
+  configfile = ::File.expand_path "~/.postgresql_config.done"
   template value_for_platform([ "centos", "redhat", "suse" ] => {"default" => "#{node[:db_postgres][:confdir]}/postgresql.conf"}, "default" => "#{node[:db_postgres][:confdir]}/postgresql.conf") do
     source "postgresql.conf.erb"
     owner "postgres"
     group "postgres"
     mode "0644"
     cookbook 'db_postgres'
-    not_if { ::File.exists?("touchfile") }
+    not_if "test -f #{configfile}" 
   end
 
   # Setup pg_hba.conf
@@ -239,12 +239,12 @@ action :install_server do
     group "postgres"
     mode "0644"
     cookbook 'db_postgres'
-    not_if { ::File.exists?("touchfile") }
+    not_if "test -f #{configfile}"
   end
 
   # Ensure we have done the postgresql config setup sucessfully, this will take care to do not overwritten these after reboot. 
-  execute "touch #{touchfile}" do
-    creates touchfile
+  execute "touch #{configfile}" do
+    creates configfile
   end
   
   # == Setup PostgreSQL user limits
