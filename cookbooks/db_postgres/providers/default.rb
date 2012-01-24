@@ -228,7 +228,7 @@ action :install_server do
     group "postgres"
     mode "0644"
     cookbook 'db_postgres'
-    not_if {File.exists?("touchfile")}
+    not_if { ::File.exists?("touchfile") }
   end
 
   # Setup pg_hba.conf
@@ -239,7 +239,7 @@ action :install_server do
     group "postgres"
     mode "0644"
     cookbook 'db_postgres'
-    not_if {File.exists?("touchfile")}
+    not_if { ::File.exists?("touchfile") }
   end
 
   # Ensure we have done the postgresql config setup sucessfully, this will take care to do not overwritten these after reboot. 
