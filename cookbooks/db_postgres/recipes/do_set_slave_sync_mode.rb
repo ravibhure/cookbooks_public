@@ -8,7 +8,7 @@
 rs_utils_marker :begin
 
 # Run only on master server
-if node[:rightscale][:instance_uuid] = node[:db][:current_master_uuid]
+if node[:rightscale][:instance_uuid] == "#{node[:db][:current_master_uuid]}"
 #
 # Set sync mode on master server
 #
