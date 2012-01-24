@@ -14,6 +14,9 @@ if node[:rightscale][:instance_uuid] == "#{node[:db][:current_master_uuid]}"
 #
   # Enable async state
   # Setup postgresql.conf
+  log "Initializing slave to connect to master in async state..."
+  # updates postgresql.conf for replication
+  Chef::Log.info "updates postgresql.conf for replication"
   template "#{node[:db_postgres][:confdir]}/postgresql.conf" do
     source "postgresql.conf.erb"
     owner "postgres"
