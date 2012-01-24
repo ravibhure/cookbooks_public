@@ -168,6 +168,9 @@ end
 
 action :install_server do
 
+  touchfile = ::File.expand_path "~/.postgresql_installed"
+  not_if { ::File.exists?(touchfile) }
+
   # PostgreSQL server depends on PostgreSQL client
   action_install_client
 
@@ -204,7 +207,6 @@ action :install_server do
   end
 
   # Initialize PostgreSQL server and create system tables
-  touchfile = ::File.expand_path "~/.postgresql_installed"
   execute "/etc/init.d/postgresql-#{node[:db_postgres][:version]} initdb ; touch #{touchfile}" do
     creates touchfile
   end
