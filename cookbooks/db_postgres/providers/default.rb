@@ -335,7 +335,7 @@ action_stop
 
 # Sync to Master data
 #@db.rsync_db(newmaster_host)
-RightScale::Database::PostgreSQL::Helper.rsync_db(newmaster_host, rep_user)
+RightScale::Database::PostgreSQL::Helper.rsync_db(newmaster_host, rep_user, rep_pass)
 
 
 # Setup recovery conf
