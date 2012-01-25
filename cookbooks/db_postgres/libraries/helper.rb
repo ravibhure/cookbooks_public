@@ -55,7 +55,7 @@ module RightScale
         # Configure the replication parameters into pg_hba.conf.
         def self.configure_pg_hba(node)
           File.open("/var/lib/pgsql/9.1/data/pg_hba.conf", "a") do |f|
-            f.puts("host     replication     #{node[:db][:replication][:user]}   10.0.0.0/8     md5")
+            f.puts("host     replication     #{node[:db][:replication][:user]}   0.0.0.0/0     md5")
           end
           return $? == 0
         end
@@ -120,8 +120,8 @@ module RightScale
           return $? == 0
         end
         
-        def self.rsync_db(newmaster_host = nil, rep_user = nil, rep_pass = nil)
-          puts `su - postgres -c "env PGCONNECT_TIMEOUT=30 /usr/pgsql-9.1/bin/pg_basebackup -D /var/lib/pgsql/9.1/backups -U #{rep_user} -W #{rep_pass} -h #{newmaster_host}"`
+        def self.rsync_db(newmaster_host = nil, rep_user = nil)
+          puts `su - postgres -c "env PGCONNECT_TIMEOUT=30 /usr/pgsql-9.1/bin/pg_basebackup -D /var/lib/pgsql/9.1/backups -U #{rep_user} -h #{newmaster_host}"`
           puts `su - postgres -c "rsync -av /var/lib/pgsql/9.1/backups/ /var/lib/pgsql/9.1/data --exclude postgresql.conf --exclude pg_hba.conf"`
           return $? == 0
         end
