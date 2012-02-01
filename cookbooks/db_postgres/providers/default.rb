@@ -89,6 +89,17 @@ action :write_backup_info do
     Chef::Log.info "Backing up slave replication status"
     masterstatus['File_position'] = slavestatus['File_position']
   end
+  
+  # Save the db provider (PostgreSQL) and version number as set in the node
+  #TODO there should be a genric db info file and a provider specific one
+  version=node[:db_postgres][:version]
+  provider=node[:db][:provider]
+  arch=node[:kernel][:machine]
+  Chef::Log.info " Saving #{provider} version #{version} in master info file"
+  masterstatus['DB_Provider']=provider
+  masterstatus['DB_Version']=version
+  masterstatus['DB_Arch']=arch
+  
   Chef::Log.info "Saving master info...:\n#{masterstatus.to_yaml}"
   ::File.open(::File.join(node[:db][:data_dir], RightScale::Database::PostgreSQL::Helper::SNAPSHOT_POSITION_FILENAME), ::File::CREAT|::File::TRUNC|::File::RDWR) do |out|
     YAML.dump(masterstatus, out)
@@ -101,10 +112,30 @@ action :pre_restore_check do
 end
 
 action :post_restore_cleanup do
+  # Performs checks for snapshot compatibility with current server
+  ruby_block "validate_backup" do
+    block do
+      master_info = RightScale::Database::PostgreSQL::Helper.load_replication_info(node)
+      # Check version matches
+      # Assume PostgreSQL 9.0 if nil
+      snap_version=master_info['DB_Version']||='9.0'
+      snap_provider=master_info['DB_Provider']||='db_postgres'
+#      snap_arch=master_info['DB_Arch']
+      current_version= node[:db_postgres][:version]
+      current_provider=master_info['DB_Provider']||=node[:db][:provider]
+#      current_arch=master_info['DB_Arch']||=node[:kernel][:machine]      
+      Chef::Log.info " Snapshot from #{snap_provider} version #{snap_version}"
+      # skip check if restore version check is false
+      if node[:db][:backup][:restore_version_check] == "true"
+        raise "FATAL: Attempting to restore #{snap_provider} #{snap_version} snapshot to #{current_provider} #{current_version} with :restore_version_check enabled." unless ( snap_version == current_version ) && ( snap_provider == current_provider ) && ( snap_arch == current_arch )
+      else
+        Chef::Log.info " Skipping #{provider} restore version check"
+      end
+    end
+  end
+
   @db = init(new_resource)
   @db.restore_snapshot
-  # TODO: used for replication
-  # @db.post_restore_sanity_check
 end
 
 action :pre_backup_check do
@@ -319,7 +350,31 @@ rep_user = node[:db][:replication][:user]
 rep_pass = node[:db][:replication][:password]
 app_name = node[:rightscale][:instance_uuid]
 
-master_info = RightScale::Database::PostgreSQL::Helper.load_replication_info(node)
+#master_info = RightScale::Database::PostgreSQL::Helper.load_replication_info(node)
+
+  # Check the volume before performing any actions. If invalid raise error and exit.
+  ruby_block "validate_master" do
+    block do
+      master_info = RightScale::Database::PostgreSQL::Helper.load_replication_info(node)
+      # Check that the snapshot is from the current master or a slave associated with the current master
+
+      # 11H2 backup
+      if master_info['Master_instance_uuid']
+        if master_info['Master_instance_uuid'] != node[:db][:current_master_uuid]
+          raise "FATAL: snapshot was taken from a different master! snap_master was:#{master_info['Master_instance_uuid']} != current master: #{node[:db][:current_master_uuid]}"
+        end
+      # 11H1 backup
+      elsif master_info['Master_instance_id']
+        Chef::Log.info " Detected 11H1 snapshot to migrate"
+        if master_info['Master_instance_id'] != node[:db][:current_master_ec2_id]
+          raise "FATAL: snapshot was taken from a different master! snap_master was:#{master_info['Master_instance_id']} != current master: #{node[:db][:current_master_ec2_id]}"
+        end
+      # File not found or does not contain info
+      else
+        raise "Position and file not saved!"
+      end
+    end
+  end
 
 # == Set slave state
 #
@@ -346,8 +401,6 @@ RightScale::Database::PostgreSQL::Helper.reconfigure_replication_info(newmaster_
  Chef::Log.info "Wiping existing runtime config files"
 `rm -rf "#{node[:db][:datadir]}/pg_xlog/*"`
 
-
-
 # ensure_db_started
 # service provider uses the status command to decide if it
 # has to run the start command again.
@@ -355,23 +408,10 @@ RightScale::Database::PostgreSQL::Helper.reconfigure_replication_info(newmaster_
       action_start
   end
 
-  ruby_block "validate_backup" do
-    block do
-      master_info = RightScale::Database::PostgreSQL::Helper.load_replication_info(node)
-      raise "Position and file not saved!" unless master_info['Master_instance_uuid']
-      # Check that the snapshot is from the current master or a slave associated with the current master
-      Chef::Log.info "mmaster_info = master_info['Master_instance_uuid'] && current_master_uuid = node[:db][:current_master_uuid]"
-      if master_info['Master_instance_uuid'] != node[:db][:current_master_uuid]
-        raise "FATAL: snapshot was taken from a different master! snap_master was:#{master_info['Master_instance_uuid']} != current master: #{node[:db][:current_master_uuid]}"
-      end
-    end
-  end
-
   # Setup slave monitoring
   action_setup_slave_monitoring
 
 end
-
 
 action :promote do
 
