@@ -14,9 +14,8 @@ db_state_assert :slave
 
 # == Open port for slave replication by old-master
 #
-rule_port = node[:sys_firewall][:rule][:port].to_i
-sys_firewall rule_port do
-  port rule_port
+sys_firewall "Open port to the old master which is becoming a slave" do
+  port node[:"#{node[:db][:provider]}"][:port].to_i
   enable true
   ip_addr node[:db][:current_master_ip]
   action :update

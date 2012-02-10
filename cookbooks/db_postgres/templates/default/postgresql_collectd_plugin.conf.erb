@@ -1,11 +1,10 @@
-# Chef generated
 LoadPlugin postgresql
 <Plugin postgresql>
 <Query dummy>
 Statement ""
 </Query>
 <Database "<%= node[:db_postgres][:database_name] %>">
-Host "<%= node[:db_postgres][:socket] %>"
+Host "/var/run/postgresql"
 User "postgres"
 Password ""
 </Database>

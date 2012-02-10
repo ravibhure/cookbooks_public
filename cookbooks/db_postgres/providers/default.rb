@@ -1,23 +1,9 @@
-# Copyright (c) 2011 RightScale Inc
 #
-# Permission is hereby granted, free of charge, to any person obtaining
-# a copy of this software and associated documentation files (the
-# "Software"), to deal in the Software without restriction, including
-# without limitation the rights to use, copy, modify, merge, publish,
-# distribute, sublicense, and/or sell copies of the Software, and to
-# permit persons to whom the Software is furnished to do so, subject to
-# the following conditions:
+# Cookbook Name:: db_postgres
 #
-# The above copyright notice and this permission notice shall be
-# included in all copies or substantial portions of the Software.
-#
-# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
-# EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
-# MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
-# NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE
-# LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
-# OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
-# WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+# Copyright RightScale, Inc. All rights reserved.  All access and use subject to the
+# RightScale Terms of Service available at http://www.rightscale.com/terms.php and,
+# if applicable, other agreements such as a RightScale Master Subscription Agreement.
 
 include RightScale::Database::PostgreSQL::Helper
 
@@ -77,29 +63,18 @@ action :firewall_update do
 end
 
 action :write_backup_info do
-    File_position = `#{node[:db_postgres][:bindir]}/pg_controldata #{node[:db_postgres][:datadir]} | grep "Latest checkpoint location:" | awk '{print $NF}'`
-    masterstatus = Hash.new
-    masterstatus['Master_IP'] = node[:db][:current_master_ip]
-    masterstatus['Master_instance_uuid'] = node[:db][:current_master_uuid]
-    slavestatus ||= Hash.new
-    slavestatus['File_position'] = File_position
+  File_position = `#{node[:db_postgres][:bindir]}/pg_controldata #{node[:db_postgres][:datadir]} | grep "Latest checkpoint location:" | awk '{print $NF}'`
+  masterstatus = Hash.new
+  masterstatus['Master_IP'] = node[:db][:current_master_ip]
+  masterstatus['Master_instance_uuid'] = node[:db][:current_master_uuid]
+  slavestatus ||= Hash.new
+  slavestatus['File_position'] = File_position
   if node[:db][:this_is_master]
     Chef::Log.info "Backing up Master info"
   else
     Chef::Log.info "Backing up slave replication status"
     masterstatus['File_position'] = slavestatus['File_position']
   end
-  
-  # Save the db provider (PostgreSQL) and version number as set in the node
-  #TODO there should be a genric db info file and a provider specific one
-  version=node[:db_postgres][:version]
-  provider=node[:db][:provider]
-  arch=node[:kernel][:machine]
-  Chef::Log.info " Saving #{provider} version #{version} in master info file"
-  masterstatus['DB_Provider']=provider
-  masterstatus['DB_Version']=version
-  masterstatus['DB_Arch']=arch
-  
   Chef::Log.info "Saving master info...:\n#{masterstatus.to_yaml}"
   ::File.open(::File.join(node[:db][:data_dir], RightScale::Database::PostgreSQL::Helper::SNAPSHOT_POSITION_FILENAME), ::File::CREAT|::File::TRUNC|::File::RDWR) do |out|
     YAML.dump(masterstatus, out)
@@ -112,28 +87,6 @@ action :pre_restore_check do
 end
 
 action :post_restore_cleanup do
-  # Performs checks for snapshot compatibility with current server
-  ruby_block "validate_backup" do
-    block do
-      master_info = RightScale::Database::PostgreSQL::Helper.load_replication_info(node)
-      # Check version matches
-      # Assume PostgreSQL 9.0 if nil
-      snap_version=master_info['DB_Version']||='9.0'
-      snap_provider=master_info['DB_Provider']||='db_postgres'
-#      snap_arch=master_info['DB_Arch']
-      current_version= node[:db_postgres][:version]
-      current_provider=master_info['DB_Provider']||=node[:db][:provider]
-#      current_arch=master_info['DB_Arch']||=node[:kernel][:machine]      
-      Chef::Log.info " Snapshot from #{snap_provider} version #{snap_version}"
-      # skip check if restore version check is false
-      if node[:db][:backup][:restore_version_check] == "true"
-        raise "FATAL: Attempting to restore #{snap_provider} #{snap_version} snapshot to #{current_provider} #{current_version} with :restore_version_check enabled." unless ( snap_version == current_version ) && ( snap_provider == current_provider ) && ( snap_arch == current_arch )
-      else
-        Chef::Log.info " Skipping #{provider} restore version check"
-      end
-    end
-  end
-
   @db = init(new_resource)
   @db.restore_snapshot
 end
@@ -165,29 +118,27 @@ action :install_client do
 
   # Install PostgreSQL 9.1.1 package(s)
   if node[:platform] == "centos"
-   arch = node[:kernel][:machine]
-   # arch = "x86_64" if arch == "i386"
-   arch = "i386" unless arch == "x86_64"
-  
-  package "libxslt" do
-    action :install
-  end
+    arch = node[:kernel][:machine]
+    # arch = "x86_64" if arch == "i386"
+    arch = "i386" unless arch == "x86_64"
+    
+    package "libxslt" do
+      action :install
+    end
 
-  packages = ["postgresql91-libs", "postgresql91", "postgresql91-devel" ]
+    packages = node[:db_postgres][:client_packages_install]
     Chef::Log.info("Packages to install: #{packages.join(",")}")
     packages.each do |p|
-	pkg = ::File.join(::File.dirname(__FILE__), "..", "files", "centos", "#{p}-9.1.1-1PGDG.rhel5.#{arch}.rpm")
-	package p do
-	action :install
-	source "#{pkg}"
-	provider Chef::Provider::Package::Rpm 
+      pkg = ::File.join(::File.dirname(__FILE__), "..", "files", "centos", "#{p}-9.1.1-1PGDG.rhel5.#{arch}.rpm")
+      package p do
+        action :install
+        source "#{pkg}"
+        provider Chef::Provider::Package::Rpm 
+      end
     end
-  end
-
   else
-
     # Currently supports CentOS in future will support others
-    
+    raise "ERROR:: Unrecognized distro #{node[:platform]}, exiting "
   end
 
   # == Install PostgreSQL client gem
@@ -202,17 +153,18 @@ action :install_server do
   # PostgreSQL server depends on PostgreSQL client
   action_install_client
 
-   arch = node[:kernel][:machine]
-   #arch = "x86_64" if arch == "i386"
-   arch = "i386" unless arch == "x86_64"
+  arch = node[:kernel][:machine]
+  arch = "i386" unless arch == "x86_64"
  
   package "uuid" do
     action :install
   end
 
-  node[:db_postgres][:packages_install].each do |p|
-      pkg = ::File.join(::File.dirname(__FILE__), "..", "files", "centos", "#{p}-9.1.1-1PGDG.rhel5.#{arch}.rpm")
-      package p do
+  packages = node[:db_postgres][:server_packages_install]
+  Chef::Log.info("Packages to install: #{packages.join(",")}")
+  packages.each do |p|
+    pkg = ::File.join(::File.dirname(__FILE__), "..", "files", "centos", "#{p}-9.1.1-1PGDG.rhel5.#{arch}.rpm")
+    package p do
       action :install
       source "#{pkg}"
       provider Chef::Provider::Package::Rpm 
@@ -220,7 +172,6 @@ action :install_server do
   end
 
   service "postgresql-#{node[:db_postgres][:version]}" do
-    #service_name value_for_platform([ "centos", "redhat", "suse" ] => {"default" => "postgresql-#{node[:db_postgres][:version]}"}, "default" => "postgresql-#{node[:db_postgres][:version]}")
     supports :status => true, :restart => true, :reload => true
     action :stop
   end
@@ -229,13 +180,13 @@ action :install_server do
   touchfile = ::File.expand_path "~/.postgresql_installed"
   execute "/etc/init.d/postgresql-#{node[:db_postgres][:version]} initdb ; touch #{touchfile}" do
     creates touchfile
+    not_if "test -f #{touchfile}"
   end
   
   # == Configure system for PostgreSQL
   #
   # Stop PostgreSQL
   service "postgresql-#{node[:db_postgres][:version]}" do
-    supports :status => true, :restart => true, :reload => true
     action :stop
   end
 
@@ -251,7 +202,7 @@ action :install_server do
 
   # Setup postgresql.conf
   # template_source = "postgresql.conf.erb"
-   
+
   configfile = ::File.expand_path "~/.postgresql_config.done"
   template value_for_platform([ "centos", "redhat", "suse" ] => {"default" => "#{node[:db_postgres][:confdir]}/postgresql.conf"}, "default" => "#{node[:db_postgres][:confdir]}/postgresql.conf") do
     source "postgresql.conf.erb"
@@ -259,11 +210,12 @@ action :install_server do
     group "postgres"
     mode "0644"
     cookbook 'db_postgres'
-    not_if "test -f #{configfile}" 
+    not_if "test -f #{configfile}"
   end
 
   # Setup pg_hba.conf
   # pg_hba_source = "pg_hba.conf.erb"
+
   cookbook_file ::File.join(node[:db_postgres][:confdir], 'pg_hba.conf') do
     source "pg_hba.conf"
     owner "postgres"
@@ -273,11 +225,10 @@ action :install_server do
     not_if "test -f #{configfile}"
   end
 
-  # Ensure we have done the postgresql config setup sucessfully, this will take care to do not overwritten these after reboot. 
   execute "touch #{configfile}" do
     creates configfile
   end
-  
+
   # == Setup PostgreSQL user limits
   #
   # Set the postgres and root users max open files to a really large number.
@@ -320,98 +271,86 @@ action :grant_replication_slave do
   
   # Enable admin/replication user
   # Check if server is in read_only mode, if found skip this... 
-      res = conn.exec("show transaction_read_only")
-      slavestatus = res.getvalue(0,0)
-      if ( slavestatus == 'off' )
-        Chef::Log.info "Detected Master server."
-        result = conn.exec("SELECT COUNT(*) FROM pg_user WHERE usename='#{node[:db][:replication][:user]}'")
-        userstat = result.getvalue(0,0)
-        if ( userstat == '1' )
-          Chef::Log.info "User #{node[:db][:replication][:user]} already exists, updating user using current inputs"
-          conn.exec("ALTER USER #{node[:db][:replication][:user]} SUPERUSER CREATEDB CREATEROLE INHERIT LOGIN ENCRYPTED PASSWORD '#{node[:db][:replication][:password]}'")
-        else
-          Chef::Log.info "creating replication user #{node[:db][:replication][:user]}"
-          conn.exec("CREATE USER #{node[:db][:replication][:user]} SUPERUSER CREATEDB CREATEROLE INHERIT LOGIN ENCRYPTED PASSWORD '#{node[:db][:replication][:password]}'")
-          # Setup pg_hba.conf for replication user allow
-          RightScale::Database::PostgreSQL::Helper.configure_pg_hba(node)
-          # Reload postgresql to read new updated pg_hba.conf
-          RightScale::Database::PostgreSQL::Helper.do_query('select pg_reload_conf()')
-        end
-      else
-        Chef::Log.info "Do nothing, Detected read_only db or slave mode"
-      end
+  res = conn.exec("show transaction_read_only")
+  slavestatus = res.getvalue(0,0)
+  if ( slavestatus == 'off' )
+    Chef::Log.info "Detected Master server."
+    result = conn.exec("SELECT COUNT(*) FROM pg_user WHERE usename='#{node[:db][:replication][:user]}'")
+    userstat = result.getvalue(0,0)
+    if ( userstat == '1' )
+      Chef::Log.info "User #{node[:db][:replication][:user]} already exists, updating user using current inputs"
+      conn.exec("ALTER USER #{node[:db][:replication][:user]} SUPERUSER CREATEDB CREATEROLE INHERIT LOGIN ENCRYPTED PASSWORD '#{node[:db][:replication][:password]}'")
+    else
+      Chef::Log.info "creating replication user #{node[:db][:replication][:user]}"
+      conn.exec("CREATE USER #{node[:db][:replication][:user]} SUPERUSER CREATEDB CREATEROLE INHERIT LOGIN ENCRYPTED PASSWORD '#{node[:db][:replication][:password]}'")
+      # Setup pg_hba.conf for replication user allow
+      RightScale::Database::PostgreSQL::Helper.configure_pg_hba(node)
+      # Reload postgresql to read new updated pg_hba.conf
+      RightScale::Database::PostgreSQL::Helper.do_query('select pg_reload_conf()')
+    end
+  else
+    Chef::Log.info "Do nothing, Detected read_only db or slave mode"
+  end
   conn.finish
 end
 
 action :enable_replication do
 
-newmaster_host = node[:db][:current_master_ip]
-rep_user = node[:db][:replication][:user]
-rep_pass = node[:db][:replication][:password]
-app_name = node[:rightscale][:instance_uuid]
+  newmaster_host = node[:db][:current_master_ip]
+  rep_user = node[:db][:replication][:user]
+  rep_pass = node[:db][:replication][:password]
+  app_name = node[:rightscale][:instance_uuid]
 
-#master_info = RightScale::Database::PostgreSQL::Helper.load_replication_info(node)
+  master_info = RightScale::Database::PostgreSQL::Helper.load_replication_info(node)
 
-  # Check the volume before performing any actions. If invalid raise error and exit.
-  ruby_block "validate_master" do
+  # == Set slave state
+  #
+  log "Setting up slave state..."
+  ruby_block "set slave state" do
     block do
-      master_info = RightScale::Database::PostgreSQL::Helper.load_replication_info(node)
-      # Check that the snapshot is from the current master or a slave associated with the current master
-
-      # 11H2 backup
-      if master_info['Master_instance_uuid']
-        if master_info['Master_instance_uuid'] != node[:db][:current_master_uuid]
-          raise "FATAL: snapshot was taken from a different master! snap_master was:#{master_info['Master_instance_uuid']} != current master: #{node[:db][:current_master_uuid]}"
-        end
-      # 11H1 backup
-      elsif master_info['Master_instance_id']
-        Chef::Log.info " Detected 11H1 snapshot to migrate"
-        if master_info['Master_instance_id'] != node[:db][:current_master_ec2_id]
-          raise "FATAL: snapshot was taken from a different master! snap_master was:#{master_info['Master_instance_id']} != current master: #{node[:db][:current_master_ec2_id]}"
-        end
-      # File not found or does not contain info
-      else
-        raise "Position and file not saved!"
-      end
+      node[:db][:this_is_master] = false
     end
   end
 
-# == Set slave state
-#
-log "Setting up slave state..."
-ruby_block "set slave state" do
-  block do
-    node[:db][:this_is_master] = false
-  end
-end
+  # Stoping Postgresql service
+  action_stop
 
-# Stoping Postgresql service
-action_stop
-
-# Sync to Master data
-#@db.rsync_db(newmaster_host)
-RightScale::Database::PostgreSQL::Helper.rsync_db(newmaster_host, rep_user)
+  # Sync to Master data
+  RightScale::Database::PostgreSQL::Helper.rsync_db(newmaster_host, rep_user)
 
 
-# Setup recovery conf
-#@db.reconfigure_replication_info(newmaster)
-RightScale::Database::PostgreSQL::Helper.reconfigure_replication_info(newmaster_host, rep_user, rep_pass, app_name)
+  # Setup recovery conf
+  RightScale::Database::PostgreSQL::Helper.reconfigure_replication_info(newmaster_host, rep_user, rep_pass, app_name)
 
 
- Chef::Log.info "Wiping existing runtime config files"
-`rm -rf "#{node[:db][:datadir]}/pg_xlog/*"`
+  Chef::Log.info "Wiping existing runtime config files"
+  `rm -rf "#{node[:db][:datadir]}/pg_xlog/*"`
 
-# ensure_db_started
-# service provider uses the status command to decide if it
-# has to run the start command again.
+
+
+  # ensure_db_started
+  # service provider uses the status command to decide if it
+  # has to run the start command again.
   5.times do
       action_start
   end
 
-  # Setup slave monitoring
+  ruby_block "validate_backup" do
+    block do
+      master_info = RightScale::Database::PostgreSQL::Helper.load_replication_info(node)
+      raise "Position and file not saved!" unless master_info['Master_instance_uuid']
+      # Check that the snapshot is from the current master or a slave associated with the current master
+      if master_info['Master_instance_uuid'] != node[:db][:current_master_uuid]
+        raise "FATAL: snapshot was taken from a different master! snap_master was:#{master_info['Master_instance_uuid']} != current master: #{node[:db][:current_master_uuid]}"
+      end
+    end
+  end
+
+   # Setup slave monitoring
   action_setup_slave_monitoring
 
 end
+
 
 action :promote do
 
@@ -419,17 +358,14 @@ action :promote do
   raise "FATAL: could not determine master host from slave status" if previous_master.nil?
   Chef::Log.info "host: #{previous_master}}"
   
-  # PHASE1: contains non-critical old master operations, if a timeout or
-  # error occurs we continue promotion assuming the old master is dead.
-
   begin
   
-  # Promote the slave into the new master  
+    # Promote the slave into the new master  
     Chef::Log.info "Promoting slave.."
     RightScale::Database::PostgreSQL::Helper.write_trigger(node)
     sleep 10
 
-  # Let the new slave loose and thus let him become the new master
+    # Let the new slave loose and thus let him become the new master
     Chef::Log.info  "New master is ReadWrite."
     
   rescue => e
@@ -495,12 +431,11 @@ action :setup_monitoring do
   end
 end
 
-
 action :setup_slave_monitoring do
+
   service "collectd" do
     action :nothing
   end
-
   # Now setup monitoring for slave replication, hard to define the lag, we are trying to get master/slave sync health status
 
   # install the pg_cluster_status collectd script into the collectd library plugins directory
@@ -556,6 +491,7 @@ action :generate_dump_file do
       pg_dump -U postgres -h /var/run/postgresql #{db_name} | gzip -c > #{dumpfile}
       EOH
   end
+
 
 end
 

@@ -144,21 +144,6 @@
       "display_name": "Slave Backup Cron Minute",
       "description": "Defines the minute of the hour when the backup EBS snapshot will be taken of the Slave database. Backups of the Slave are taken hourly. By default, a minute will be randomly chosen at launch time. Uses standard crontab format (e.g., 30 for minute 30 of the hour)."
     },
-    "db/provider": {
-      "required": "optional",
-      "calculated": false,
-      "choice": [
-        "db_mysql",
-        "db_postgres"
-      ],
-      "default": "db_postgres",
-      "type": "string",
-      "recipes": [
-        "db::default"
-      ],
-      "display_name": "Database Provider",
-      "description": "Database provider for the Master Database. (Ex: db_mysql)"
-    },
     "db/dump/database_name": {
       "required": "required",
       "calculated": false,
@@ -281,7 +266,7 @@
         "db::do_secondary_restore"
       ],
       "display_name": "Database Backup Lineage",
-      "description": "The prefix that will be used to name/locate the backup of a particular database. Note: For servers running on Rackspace, this value also indicates the Cloud Files container to use for storing primary backups. If a Cloud Files container with this name does not already exist, the setup process creates one."
+      "description": "The prefix that will be used to name/locate the backup of a particular database."
     },
     "db/replication/password": {
       "required": "required",

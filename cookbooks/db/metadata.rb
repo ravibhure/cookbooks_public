@@ -76,13 +76,6 @@ attribute "db",
   :display_name => "General Database Options",
   :type => "hash"
 
-attribute "db/provider",
-  :display_name => "Database Provider",
-  :description => "Database provider for the Master Database. (Ex: db_mysql)",
-  :default => "db_postgres",
-  :choice => [ "db_mysql", "db_postgres" ],
-  :recipes => [ "db::default" ]
-  
 attribute "db/fqdn",
   :display_name => "Database Master FQDN",
   :description => "The fully qualified domain name for the master database server (e.g., text:db-master.example.com).",
@@ -137,7 +130,7 @@ attribute "db/init_slave_at_boot",
 #
 attribute "db/backup/lineage",
   :display_name => "Database Backup Lineage",
-  :description => "The prefix that will be used to name/locate the backup of a particular database. Note: For servers running on Rackspace, this value also indicates the Cloud Files container to use for storing primary backups. If a Cloud Files container with this name does not already exist, the setup process creates one.",
+  :description => "The prefix that will be used to name/locate the backup of a particular database.",
   :required => true,
   :recipes => [
     "db::do_primary_init_slave",
