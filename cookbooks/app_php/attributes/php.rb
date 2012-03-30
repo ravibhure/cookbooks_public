@@ -8,7 +8,7 @@
 # Optional attributes
 set_unless[:php][:db_schema_name] = ""
 set_unless[:php][:modules_list] = []
-set_unless[:php][:db_adapter] = "mysql"
+set_unless[:php][:db_adapter] = "postgresql"
 
 
 # Calculated attributes
@@ -31,6 +31,6 @@ when "centos","fedora","suse","redhat"
   elsif(php[:db_adapter] == "postgresql") 
     set[:db_postgres][:socket] = "/var/run/postgresql"
   else
-    raise "Unrecognized database adapter #{node[:app][:db_adapter]}, exiting "
+    raise "Unrecognized database adapter #{node[:php][:db_adapter]}, exiting "
   end
 end

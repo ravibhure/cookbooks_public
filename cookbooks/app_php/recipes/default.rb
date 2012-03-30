@@ -28,7 +28,7 @@ case node[:platform]
     elsif node[:php][:db_adapter] == "postgresql"
       node[:app][:packages] = ["php53u", "php53u-pgsql", "php53u-pear", "php53u-zts"]
     else
-      raise "Unrecognized database adapter #{node[:app][:db_adapter]}, exiting "
+      raise "Unrecognized database adapter #{node[:php][:db_adapter]}, exiting "
     end
   else
     raise "Unrecognized distro #{node[:platform]}, exiting "
