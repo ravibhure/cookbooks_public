@@ -25,6 +25,21 @@
   },
   "version": "0.1.0",
   "attributes": {
+    "app/db_adapter": {
+      "required": "optional",
+      "calculated": false,
+      "choice": [
+        "mysql",
+        "postgresql"
+      ],
+      "default": "mysql",
+      "type": "string",
+      "recipes": [
+        "app::setup_db_connection"
+      ],
+      "display_name": "Database adapter for application ",
+      "description": "Enter database adpter wich will be used to connect to the database Default: mysql"
+    }
   },
   "maintainer": "RightScale, Inc.",
   "replacing": {

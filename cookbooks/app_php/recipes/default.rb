@@ -15,17 +15,17 @@ node[:app][:destination]="#{node[:web_apache][:docroot]}"
 
 case node[:platform]
   when "ubuntu", "debian"
-    if(app[:db_adapter] == "mysql")
+    if(php[:db_adapter] == "mysql")
       node[:app][:packages] = ["php5", "php5-mysql", "php-pear", "libapache2-mod-php5"]
-    elsif(app[:db_adapter] == "postgresql")
+    elsif(php[:db_adapter] == "postgresql")
       node[:app][:packages] = ["php5", "php5-pgsql", "php-pear", "libapache2-mod-php5"]
     else
       raise "Unrecognized database adapter #{node[:app][:db_adapter]}, exiting "
     end
   when "centos","fedora","suse","redhat"
-    if(app[:db_adapter] == "mysql")
-      node[:app][:packages] = ["php53u", "php53u-mysql", "php53u-pear", "php53u-zts"]
-    elsif(app[:db_adapter] == "postgresql")
+    if(php[:db_adapter] == "mysql")
+      node[:php][:packages] = ["php53u", "php53u-mysql", "php53u-pear", "php53u-zts"]
+    elsif(php[:db_adapter] == "postgresql")
       node[:app][:packages] = ["php53u", "php53u-pgsql", "php53u-pear", "php53u-zts"]
     else
       raise "Unrecognized database adapter #{node[:app][:db_adapter]}, exiting "
