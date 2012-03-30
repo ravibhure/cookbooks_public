@@ -10,7 +10,6 @@ set_unless[:php][:db_schema_name] = ""
 set_unless[:php][:modules_list] = []
 set_unless[:php][:db_adapter] = "mysql"
 
-set[:php][:db_adapter]= "#{node[:app][:db_adapter]}"
 
 # Calculated attributes
 case platform
