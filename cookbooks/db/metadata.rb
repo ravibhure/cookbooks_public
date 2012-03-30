@@ -9,6 +9,7 @@ depends "rs_utils"
 depends "block_device"
 depends "sys_firewall"
 depends "db_mysql"
+depends "db_postgres"
 
 
 recipe "db::default", "Adds the database:active=true tag to your server, identifying it as an database server. The tag is used by application servers to identify active databases. It also loads the required 'db' resources."
@@ -75,7 +76,7 @@ recipe "db::do_delete_volumes_and_terminate_server", "Deletes any currently atta
 attribute "db",
   :display_name => "General Database Options",
   :type => "hash"
-  
+
 attribute "db/dns/master/fqdn",
   :display_name => "Database Master FQDN",
   :description => "The fully qualified domain name for the master database server (e.g., text:db-master.example.com).",

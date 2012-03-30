@@ -1,0 +1,68 @@
+#!/bin/bash
+# description: Tomcat Start Stop Restart
+# processname: tomcat
+# chkconfig: 234 20 80
+
+TOMCAT_PROG="$(basename $0)"
+NAME="$TOMCAT_PROG"
+JAVA_HOME=$(readlink /usr/java/latest)
+export JAVA_HOME
+PATH=$JAVA_HOME/bin:$PATH
+export PATH
+CATALINA_HOME=/usr/share/apache-tomcat-<%=@version%>
+
+start(){
+  echo -n $"Starting $TOMCAT_PROG: "
+  echo ""
+  sh $CATALINA_HOME/bin/startup.sh
+  RETVAL="$?"
+  echo
+  [ $RETVAL -eq 0 ] && touch /var/lock/subsys/$NAME
+  return $RETVAL
+}
+
+stop(){
+  echo -n $"Stopping $TOMCAT_PROG: "
+  echo  ""
+  sh $CATALINA_HOME/bin/shutdown.sh
+  RETVAL="$?"
+
+  if [ $RETVAL -eq 0 ] ; then
+    rm -f /var/lock/subsys/$NAME
+  else
+    echo "Unable to stop $NAME"
+  fi
+  echo
+  return $RETVAL
+}
+
+restart(){
+  stop
+  sleep 2
+  start
+}
+
+version(){
+  $CATALINA_HOME/bin/version.sh
+}
+
+case $1 in
+  start)
+    start
+    ;;
+  stop)
+    stop
+    ;;
+  restart)
+    restart
+    ;;
+
+  version)
+    version
+    ;;
+  *)
+    echo -n "Usage: $TOMCAT_PROG "
+    echo "{start|stop|restart|version}"
+    exit 1
+esac
+exit 0
