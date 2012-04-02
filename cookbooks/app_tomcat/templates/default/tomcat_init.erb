@@ -11,9 +11,24 @@ PATH=$JAVA_HOME/bin:$PATH
 export PATH
 CATALINA_HOME=/usr/share/apache-tomcat-<%=@version%>
 
+# Define the tomcat username
+TOMCAT_USER="${TOMCAT_USER:-tomcat}"
+
+# Define the tomcat log file
+TOMCAT_LOG="${TOMCAT_LOG:-/usr/share/apache-tomcat-<%=@version%>/logs/catalina.out}"
+
+
+# For SELinux we need to use 'runuser' not 'su'
+if [ -x "/sbin/runuser" ]; then
+    SU="/sbin/runuser"
+else
+    SU="/bin/su"
+fi
+
 start(){
   echo -n $"Starting $TOMCAT_PROG: "
   echo ""
+  $SU - $TOMCAT_USER -c "/bin/sh $CATALINA_HOME/bin/startup.sh" >> $TOMCAT_LOG 2>&1  
   sh $CATALINA_HOME/bin/startup.sh
   RETVAL="$?"
   echo
@@ -24,7 +39,7 @@ start(){
 stop(){
   echo -n $"Stopping $TOMCAT_PROG: "
   echo  ""
-  sh $CATALINA_HOME/bin/shutdown.sh
+  $SU - $TOMCAT_USER -c "/bin/sh $CATALINA_HOME/bin/shutdown.sh" >> $TOMCAT_LOG 2>&1  
   RETVAL="$?"
 
   if [ $RETVAL -eq 0 ] ; then
