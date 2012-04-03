@@ -38,6 +38,35 @@ action :install do
     log "installing #{p}"
     package p
 
+    cookbook_file "/tmp/apache-tomcat-#{node[:tomcat][:version]}.tar.gz" do
+      source "apache-tomcat-#{node[:tomcat][:version]}.tar.gz"
+      cookbook 'app_tomcat'
+      not_if { ::FileTest.exists?("/tmp/apache-tomcat-#{node[:tomcat][:version]}.tar.gz") }
+    end
+
+    execute "Untar apache-tomcat-#{node[:tomcat][:version]}" do
+      command "tar -xzf /tmp/apache-tomcat-#{node[:tomcat][:version]}.tar.gz -C /usr/share/"
+    end
+  
+    log "  Setting apache tomcat7 init script"
+    template "/etc/init.d/tomcat7" do
+      source "tomcat_init.erb"
+      group "root"
+      owner "root"      
+      mode "0755"
+      variables :version => "node[:tomcat][:version]"      
+      cookbook 'app_tomcat'
+    end        
+    
+    bash "adduser_for_tomcat_7" do
+    flags "-ex"
+      code <<-EOH
+        groupadd "#{node[:tomcat][:app_user]}"
+        useradd -s /bin/sh -g tomcat -d /usr/share/apache-tomcat-#{node[:tomcat][:version]} tomcat
+        chown -R #{node[:tomcat][:app_user]}:#{node[:tomcat][:app_user]} /usr/share/apache-tomcat-#{node[:tomcat][:version]}        
+      EOH
+    end  
+    
     # eclipse-ecj and symlink must be installed FIRST
     if p=="eclipse-ecj" || p=="ecj-gcj"
       file "/usr/share/java/ecj.jar" do
@@ -54,36 +83,6 @@ action :install do
   execute "alternatives" do
     command "#{node[:tomcat][:alternatives_cmd]}"
     action :run
-  end
-
-  # Installing apache-tomcat-7
-  cookbook_file "/tmp/apache-tomcat-#{[:tomcat][:version]}.tar.gz" do
-    source "apache-tomcat-#{[:tomcat][:version]}.tar.gz"
-    cookbook 'app_tomcat'
-    not_if { ::FileTest.exists?("/tmp/apache-tomcat-#{node[:tomcat][:version]}.tar.gz") }
-  end
-  
-  execute "Untar apache-tomcat-#{node[:tomcat][:version]}" do
-    command "tar -xzf /tmp/apache-tomcat-#{node[:tomcat][:version]}.tar.gz -C /usr/share/"
-  end
-
-  log "  Setting apache tomcat7 init script"
-  template "/etc/init.d/tomcat7" do
-    source "tomcat_init.erb"
-    group "root"
-    owner "root"
-    mode "0755"
-    variables :version => "node[:tomcat][:version]"
-    cookbook 'app_tomcat'
-  end
-  
-  bash "adduser_for_tomcat_7" do
-  flags "-ex"
-    code <<-EOH
-      groupadd "#{node[:tomcat][:app_user]}"
-      useradd -s /bin/sh -g tomcat -d /usr/share/apache-tomcat-#{node[:tomcat][:version]} tomcat
-      chown -R #{node[:tomcat][:app_user]}:#{node[:tomcat][:app_user]} /usr/share/apache-tomcat-#{node[:tomcat][:version]}
-    EOH
   end
 
   db_adapter = node[:tomcat][:db_adapter]
