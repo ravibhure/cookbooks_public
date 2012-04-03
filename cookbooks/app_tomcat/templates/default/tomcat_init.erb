@@ -28,7 +28,7 @@ fi
 start(){
   echo -n $"Starting $TOMCAT_PROG: "
   echo ""
-  $SU - $TOMCAT_USER -c "/bin/sh $CATALINA_HOME/bin/startup.sh" >> $TOMCAT_LOG 2>&1  
+  /bin/sh $CATALINA_HOME/bin/startup.sh
   RETVAL="$?"
   echo
   [ $RETVAL -eq 0 ] && touch /var/lock/subsys/$NAME
@@ -38,7 +38,7 @@ start(){
 stop(){
   echo -n $"Stopping $TOMCAT_PROG: "
   echo  ""
-  $SU - $TOMCAT_USER -c "/bin/sh $CATALINA_HOME/bin/shutdown.sh" >> $TOMCAT_LOG 2>&1  
+  /bin/sh $CATALINA_HOME/bin/shutdown.sh
   RETVAL="$?"
 
   if [ $RETVAL -eq 0 ] ; then
