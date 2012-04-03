@@ -44,8 +44,10 @@ action :install do
       not_if { ::FileTest.exists?("/tmp/apache-tomcat-#{node[:tomcat][:version]}.tar.gz") }
     end
 
+    tomcat_base="/usr/share/apache-tomcat-#{node[:tomcat][:version]}"
     execute "Untar apache-tomcat-#{node[:tomcat][:version]}" do
       command "tar -xzf /tmp/apache-tomcat-#{node[:tomcat][:version]}.tar.gz -C /usr/share/"
+      not_if do File.directory?(tomcat_base) end
     end
   
     log "  Setting apache tomcat7 init script"
@@ -60,8 +62,13 @@ action :install do
     
     bash "adduser_for_tomcat_7" do
       code <<-EOH
-        useradd -s /bin/sh -d /usr/share/apache-tomcat-#{node[:tomcat][:version]} #{node[:tomcat][:app_user]}
-        chown -R #{node[:tomcat][:app_user]}:#{node[:tomcat][:app_user]} /usr/share/apache-tomcat-#{node[:tomcat][:version]}        
+        grep "^#{node[:tomcat][:app_user]}:" /etc/passwd > /dev/null
+        if [ $? != 0 ]; then
+            useradd -s /bin/sh -d /usr/share/apache-tomcat-#{node[:tomcat][:version]} #{node[:tomcat][:app_user]}
+            chown -R #{node[:tomcat][:app_user]}:#{node[:tomcat][:app_user]} /usr/share/apache-tomcat-#{node[:tomcat][:version]}
+        else
+            echo "User #{node[:tomcat][:app_user]} already exists, ... do nothing!"
+        fi 
       EOH
     end  
     
@@ -174,6 +181,7 @@ action :setup_vhost do
     mode "0755"
     cookbook 'app_tomcat'
     variables(
+      :version => node[:tomcat][:version],
       :app_user => node[:tomcat][:app_user],
       :java_xms => node[:tomcat][:java][:xms],
       :java_xmx => node[:tomcat][:java][:xms],
@@ -200,7 +208,7 @@ action :setup_vhost do
   log "  Setup logrotate for tomcat"
   template "/etc/logrotate.d/tomcat7" do
     source "tomcat7_logrotate.conf.erb"
-    variables :version => "node[:tomcat][:version]"
+    variables :version => node[:tomcat][:version]
     cookbook 'app_tomcat'
   end
 
@@ -418,7 +426,7 @@ action :setup_monitoring do
   bash "Add collectd to setenv" do
     flags "-ex"
     code <<-EOH
-      cat <<EOF>>/usr/share/apache-tomcat-#{node[:tomcat][:version]}/bin/setenv.sh
+      cat <<EOF>>"/usr/share/apache-tomcat-#{node[:tomcat][:version]}/bin/setenv.sh"
       CATALINA_OPTS="\$CATALINA_OPTS -Djcd.host=#{node[:rightscale][:instance_uuid]} -Djcd.instance=tomcat7 -Djcd.dest=udp://#{node[:rightscale][:servers][:sketchy][:hostname]}:3011 -Djcd.tmpl=javalang,tomcat -javaagent:/usr/share/apache-tomcat-#{node[:tomcat][:version]}/lib/collectd.jar"
     EOH
   end
