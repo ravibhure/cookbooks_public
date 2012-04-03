@@ -38,6 +38,35 @@ action :install do
     log "installing #{p}"
     package p
 
+    cookbook_file "/tmp/apache-tomcat-#{[:tomcat][:version]}.tar.gz" do
+      source "apache-tomcat-#{[:tomcat][:version]}.tar.gz"
+      cookbook 'app_tomcat'
+      not_if { ::FileTest.exists?("/tmp/apache-tomcat-#{node[:tomcat][:version]}.tar.gz") }
+    end
+
+    execute "Untar apache-tomcat-#{node[:tomcat][:version]}" do
+      command "tar -xzf /tmp/apache-tomcat-#{node[:tomcat][:version]}.tar.gz -C /usr/share/"
+    end
+  
+    log "  Setting apache tomcat7 init script"
+    template "/etc/init.d/tomcat7" do
+      source "tomcat_init.erb"
+      group "root"
+      owner "root"      
+      mode "0755"
+      variables :version => "node[:tomcat][:version]"      
+      cookbook 'app_tomcat'
+    end        
+    
+    bash "adduser_for_tomcat_7" do
+    flags "-ex"
+      code <<-EOH
+        groupadd "#{node[:tomcat][:app_user]}"
+        useradd -s /bin/sh -g tomcat -d /usr/share/apache-tomcat-#{node[:tomcat][:version]} tomcat
+        chown -R #{node[:tomcat][:app_user]}:#{node[:tomcat][:app_user]} /usr/share/apache-tomcat-#{node[:tomcat][:version]}        
+      EOH
+    end  
+    
     # eclipse-ecj and symlink must be installed FIRST
     if p=="eclipse-ecj" || p=="ecj-gcj"
       file "/usr/share/java/ecj.jar" do
@@ -138,13 +167,13 @@ end
 # Setup apache virtual host and corresponding tomcat configs
 action :setup_vhost do
 
-  log "  Creating tomcat7.conf"
-  template "/etc/tomcat7/tomcat7.conf" do
+  log "  Creating setenv.sh"
+  template "/usr/share/apache-tomcat-#{node[:tomcat][:version]}/bin/setenv.sh" do
     action :create
-    source "tomcat7_conf.erb"
+    source "setenv.sh.erb"
     group "root"
-    owner "root"
-    mode "0644"
+    owner "#{node[:tomcat][:app_user]}"
+    mode "0755"
     cookbook 'app_tomcat'
     variables(
       :app_user => node[:tomcat][:app_user],
@@ -235,11 +264,11 @@ action :setup_vhost do
     end
 
     # Configure workers.properties for mod_jk
-    template "/etc/tomcat7/workers.properties" do
+    template "/usr/share/apache-tomcat-#{node[:tomcat][:version]}/conf/workers.properties" do
       action :create
       source "tomcat_workers.properties.erb"
       variables(
-      :tomcat_name => "tomcat7",
+      :version => node[:tomcat][:version],
       :config_subdir => node[:apache][:config_subdir]
       )
       cookbook 'app_tomcat'
@@ -250,7 +279,7 @@ action :setup_vhost do
       action :create
       backup false
       source "mod_jk.conf.erb"
-      variables :tomcat_name => "tomcat7"
+      variables :version => "node[:tomcat][:version]"
       cookbook 'app_tomcat'
     end
 
@@ -341,7 +370,7 @@ action :setup_db_connection do
     raise "Unrecognized database adapter #{node[:tomcat][:db_adapter]}, exiting "
   end
 
-  log "  Creating context.xml"
+  log "  Creating web.xml"
   template "/usr/share/apache-tomcat-#{node[:tomcat][:version]}/conf/web.xml" do
     source "web_xml.erb"
     owner "#{node[:tomcat][:app_user]}"
@@ -387,11 +416,11 @@ action :setup_monitoring do
     not_if do !::File.exists?("/usr/share/java/collectd.jar") end
   end
 
-  #Add collectd support to tomcat.conf
-  bash "Add collectd to catlina" do
+  #Add collectd support to setenv.sh
+  bash "Add collectd to setenv" do
     flags "-ex"
     code <<-EOH
-#      cat <<EOF>>/usr/share/apache-tomcat-#{node[:tomcat][:version]}/bin/catalina.sh
+      cat <<EOF>>/usr/share/apache-tomcat-#{node[:tomcat][:version]}/bin/setenv.sh
       CATALINA_OPTS="\$CATALINA_OPTS -Djcd.host=#{node[:rightscale][:instance_uuid]} -Djcd.instance=tomcat7 -Djcd.dest=udp://#{node[:rightscale][:servers][:sketchy][:hostname]}:3011 -Djcd.tmpl=javalang,tomcat -javaagent:/usr/share/apache-tomcat-#{node[:tomcat][:version]}/lib/collectd.jar"
     EOH
   end

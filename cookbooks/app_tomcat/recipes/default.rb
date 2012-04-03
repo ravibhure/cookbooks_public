@@ -17,21 +17,11 @@ case node[:platform]
   when "ubuntu", "debian"
     if node[:tomcat][:db_adapter] == "mysql"
        node[:app][:packages] = ["ecj-gcj",\
-                                          # "java-gcj-compat-dev",\
-                                    #       "tomcat6",\
-                                    #       "tomcat6-admin",\
-                                    #       "tomcat6-common",\
-                                    #       "tomcat6-user",\
                                            "libmysql-java",\
                                            "libtcnative-1"
       ]
     elsif node[:tomcat][:db_adapter] == "postgresql"
        node[:app][:packages] = ["ecj-gcj",\
-                                          # "java-gcj-compat-dev",\
-                                   #        "tomcat6",\
-                                   #        "tomcat6-admin",\
-                                   #        "tomcat6-common",\
-                                   #        "tomcat6-user",\
                                            "libtcnative-1"
       ]
     else
@@ -40,16 +30,10 @@ case node[:platform]
   when "centos", "fedora", "suse", "redhat", "redhatenterpriseserver"
     if node[:tomcat][:db_adapter] == "mysql"
       node[:app][:packages] = ["eclipse-ecj",\
-                                        #       "tomcat6",\
-                                        #       "tomcat6-admin-webapps",\
-                                         #      "tomcat6-webapps",\
-                                         #      "tomcat-native",\
+                                               "tomcat-native",\
                                                "mysql-connector-java"]
     elsif node[:tomcat][:db_adapter] == "postgresql"
       node[:app][:packages] = ["eclipse-ecj",\
-                                          #     "tomcat6",\
-                                          #     "tomcat6-admin-webapps",\
-                                          #     "tomcat6-webapps",\
                                                "tomcat-native"]
     else
       raise "Unrecognized database adapter #{node[:tomcat][:db_adapter]}, exiting "
