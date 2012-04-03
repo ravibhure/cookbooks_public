@@ -277,7 +277,7 @@ action :setup_vhost do
       action :create
       backup false
       source "mod_jk.conf.erb"
-      variables :version => "node[:tomcat][:version]"
+      variables :version => node[:tomcat][:version]
       cookbook 'app_tomcat'
     end
 
