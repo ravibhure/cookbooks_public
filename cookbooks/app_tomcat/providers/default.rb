@@ -54,15 +54,13 @@ action :install do
       group "root"
       owner "root"      
       mode "0755"
-      variables :version => "node[:tomcat][:version]"      
+      variables :version => node[:tomcat][:version]
       cookbook 'app_tomcat'
     end        
     
     bash "adduser_for_tomcat_7" do
-    flags "-ex"
       code <<-EOH
-        groupadd "#{node[:tomcat][:app_user]}"
-        useradd -s /bin/sh -g tomcat -d /usr/share/apache-tomcat-#{node[:tomcat][:version]} tomcat
+        useradd -s /bin/sh -d /usr/share/apache-tomcat-#{node[:tomcat][:version]} #{node[:tomcat][:app_user]}
         chown -R #{node[:tomcat][:app_user]}:#{node[:tomcat][:app_user]} /usr/share/apache-tomcat-#{node[:tomcat][:version]}        
       EOH
     end  
