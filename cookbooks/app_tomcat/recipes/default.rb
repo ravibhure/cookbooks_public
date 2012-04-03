@@ -16,25 +16,17 @@ node[:app][:port] = 8000
 case node[:platform]
   when "ubuntu", "debian"
     if node[:tomcat][:db_adapter] == "mysql"
-       node[:app][:packages] = ["ecj-gcj",\
-                                           "libmysql-java",\
-                                           "libtcnative-1"
-      ]
+       node[:app][:packages] = ["ecj-gcj", "libmysql-java", "libtcnative-1"]
     elsif node[:tomcat][:db_adapter] == "postgresql"
-       node[:app][:packages] = ["ecj-gcj",\
-                                           "libtcnative-1"
-      ]
+       node[:app][:packages] = ["ecj-gcj", "libtcnative-1"]
     else
       raise "Unrecognized database adapter #{node[:tomcat][:db_adapter]}, exiting "
     end
   when "centos", "fedora", "suse", "redhat", "redhatenterpriseserver"
     if node[:tomcat][:db_adapter] == "mysql"
-      node[:app][:packages] = ["eclipse-ecj",\
-                                               "tomcat-native",\
-                                               "mysql-connector-java"]
+      node[:app][:packages] = ["eclipse-ecj", "tomcat-native", "mysql-connector-java"]
     elsif node[:tomcat][:db_adapter] == "postgresql"
-      node[:app][:packages] = ["eclipse-ecj",\
-                                               "tomcat-native"]
+      node[:app][:packages] = ["eclipse-ecj", "tomcat-native"]
     else
       raise "Unrecognized database adapter #{node[:tomcat][:db_adapter]}, exiting "
     end
