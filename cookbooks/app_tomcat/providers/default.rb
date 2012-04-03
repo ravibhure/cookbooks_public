@@ -47,7 +47,7 @@ action :install do
     tomcat_base="/usr/share/apache-tomcat-#{node[:tomcat][:version]}"
     execute "Untar apache-tomcat-#{node[:tomcat][:version]}" do
       command "tar -xzf /tmp/apache-tomcat-#{node[:tomcat][:version]}.tar.gz -C /usr/share/"
-      not_if do File.directory?(tomcat_base) end
+      not_if "test -d tomcat_base"
     end
   
     log "  Setting apache tomcat7 init script"
