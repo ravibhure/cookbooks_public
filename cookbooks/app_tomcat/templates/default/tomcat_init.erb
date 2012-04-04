@@ -11,6 +11,12 @@ PATH=$JAVA_HOME/bin:$PATH
 export PATH
 CATALINA_HOME=/usr/share/apache-tomcat-<%=@version%>
 
+if [ -r "$CATALINA_BASE/bin/setenv.sh" ]; then
+  . "$CATALINA_BASE/bin/setenv.sh"
+elif [ -r "$CATALINA_HOME/bin/setenv.sh" ]; then
+  . "$CATALINA_HOME/bin/setenv.sh"
+fi
+
 start(){
   echo -n $"Starting $TOMCAT_PROG: "
   echo ""
@@ -24,6 +30,7 @@ start(){
 stop(){
   echo -n $"Stopping $TOMCAT_PROG: "
   echo  ""
+  
   /bin/sh $CATALINA_HOME/bin/shutdown.sh
   RETVAL="$?"
 
@@ -38,7 +45,7 @@ stop(){
 
 restart(){
   stop
-  sleep 2
+  sleep 10
   start
 }
 

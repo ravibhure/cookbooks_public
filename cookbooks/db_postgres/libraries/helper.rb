@@ -46,6 +46,13 @@ module RightScale
           return $? == 0
         end
 
+	# This is a check to verify node is master server
+        def self.detect_if_master(node)
+          read_only = `/usr/pgsql-9.1/bin/pg_controldata /var/lib/pgsql/9.1/data | grep "Database cluster state" | awk '{print $NF}'`
+          return true if read_only =~ /production/
+        end
+
+
         def self.get_pgsql_handle(hostname = "localhost", username = "postgres")
           info_msg = "PostgreSQL connection to #{hostname}"
           info_msg << ": opening NEW PostgreSQL connection."
