@@ -25,7 +25,7 @@ end
 action :restart do
   log "  Running restart sequence"
   action_stop
-     sleep 5
+     sleep 10
   action_start
 end
 
@@ -213,6 +213,7 @@ action :setup_vhost do
   end
 
 
+    action_stop
     action_start
 
   log "  Setup mod_jk vhost"
