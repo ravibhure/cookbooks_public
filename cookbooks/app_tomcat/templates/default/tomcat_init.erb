@@ -68,8 +68,7 @@ case $1 in
     version
     ;;
   *)
-    echo -n "Usage: $TOMCAT_PROG "
-    echo "{start|stop|restart|version}"
+    echo $"Usage: $0 {start|stop|restart|version}"
     exit 1
 esac
 exit 0

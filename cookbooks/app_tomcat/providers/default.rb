@@ -25,7 +25,7 @@ end
 action :restart do
   log "  Running restart sequence"
   action_stop
-     sleep 10
+     sleep 5
   action_start
 end
 
@@ -212,8 +212,6 @@ action :setup_vhost do
     cookbook 'app_tomcat'
   end
 
-
-    action_stop
     action_start
 
   log "  Setup mod_jk vhost"
@@ -432,6 +430,7 @@ action :setup_monitoring do
     EOH
   end
 
+  action_restart
 
 end
 
