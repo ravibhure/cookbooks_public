@@ -1,5 +1,5 @@
 #!/bin/bash
-# description: Tomcat Start Stop Restart
+# description: Tomcat Start Stop Restart Status Version
 # processname: tomcat
 # chkconfig: 234 20 80
 #
@@ -56,7 +56,7 @@ stop(){
 }
 
 rhstatus() {
-        status $NAME
+  status $NAME
 }
 
 restart(){
