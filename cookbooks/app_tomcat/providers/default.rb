@@ -427,6 +427,7 @@ action :setup_monitoring do
     code <<-EOH
       cat <<EOF>>/usr/share/apache-tomcat-#{node[:tomcat][:version]}/bin/setenv.sh
       CATALINA_OPTS="\$CATALINA_OPTS -Djcd.host=#{node[:rightscale][:instance_uuid]} -Djcd.instance=tomcat7 -Djcd.dest=udp://#{node[:rightscale][:servers][:sketchy][:hostname]}:3011 -Djcd.tmpl=javalang,tomcat -javaagent:/usr/share/apache-tomcat-#{node[:tomcat][:version]}/lib/collectd.jar"
+      EOF
     EOH
   end
 
