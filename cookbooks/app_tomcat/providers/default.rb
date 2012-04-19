@@ -60,18 +60,36 @@ action :install do
       cookbook 'app_tomcat'
     end        
     
-    bash "adduser_for_tomcat_7" do
-      code <<-EOH
-        grep "^#{node[:tomcat][:app_user]}:" /etc/passwd > /dev/null
-        if [ $? != 0 ]; then
-            useradd -s /bin/sh -d /usr/share/apache-tomcat-#{node[:tomcat][:version]} #{node[:tomcat][:app_user]}
-            chown -R #{node[:tomcat][:app_user]}:#{node[:tomcat][:app_user]} /usr/share/apache-tomcat-#{node[:tomcat][:version]}
-        else
-            echo "User #{node[:tomcat][:app_user]} already exists, ... do nothing!"
-        fi 
-      EOH
-    end  
-    
+    case node[:platform]
+      when "ubuntu", "debian"
+        bash "adduser_for_tomcat_7" do
+          code <<-EOH
+            grep "^#{node[:tomcat][:app_user]}:" /etc/passwd > /dev/null
+            if [ $? != 0 ]; then
+                addgroup #{node[:tomcat][:app_user]}
+                adduser --system --home /usr/share/apache-tomcat-#{node[:tomcat][:version]} --shell /bin/sh --ingroup #{node[:tomcat][:app_user]} #{node[:tomcat][:app_user]} 
+                chown -R #{node[:tomcat][:app_user]}:#{node[:tomcat][:app_user]} /usr/share/apache-tomcat-#{node[:tomcat][:version]}
+            else
+                echo "User #{node[:tomcat][:app_user]} already exists, ... do nothing!"
+            fi
+          EOH
+        end
+
+      when "centos","fedora","suse","redhat"
+        bash "adduser_for_tomcat_7" do
+          code <<-EOH
+            grep "^#{node[:tomcat][:app_user]}:" /etc/passwd > /dev/null
+            if [ $? != 0 ]; then
+                useradd -s /bin/sh -d /usr/share/apache-tomcat-#{node[:tomcat][:version]} #{node[:tomcat][:app_user]}
+                chown -R #{node[:tomcat][:app_user]}:#{node[:tomcat][:app_user]} /usr/share/apache-tomcat-#{node[:tomcat][:version]}
+            else
+                echo "User #{node[:tomcat][:app_user]} already exists, ... do nothing!"
+            fi
+          EOH
+        end
+
+    end
+
     # eclipse-ecj and symlink must be installed FIRST
     if p=="eclipse-ecj" || p=="ecj-gcj"
       file "/usr/share/java/ecj.jar" do
