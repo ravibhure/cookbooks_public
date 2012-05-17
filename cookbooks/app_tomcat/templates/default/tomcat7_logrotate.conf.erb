@@ -1,0 +1,16 @@
+#
+# Managed by RightScale
+# DO NOT EDIT BY HAND
+#
+
+/usr/share/apache-tomcat-<%= @version %>/logs/*log /usr/share/apache-tomcat-<%= @version %>/logs/*.out {
+    size 10M
+    rotate 4
+    missingok
+    notifempty
+    nocompress
+    sharedscripts
+    postrotate
+        service syslog-ng reload
+    endscript
+}

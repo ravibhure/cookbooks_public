@@ -1,0 +1,93 @@
+#!/bin/bash
+# description: Tomcat Start Stop Restart Status Version
+# processname: tomcat
+# chkconfig: 234 20 80
+#
+# Managed by RightScale
+# DO NOT EDIT BY HAND
+#
+
+. /etc/init.d/functions
+
+TOMCAT_PROG="$(basename $0)"
+NAME="$TOMCAT_PROG"
+JAVA_HOME=$(readlink /usr/java/latest)
+export JAVA_HOME
+PATH=$JAVA_HOME/bin:$PATH
+export PATH
+CATALINA_HOME=/usr/share/apache-tomcat-<%=@version%>
+
+if [ -r "$CATALINA_BASE/bin/setenv.sh" ]; then
+  . "$CATALINA_BASE/bin/setenv.sh"
+elif [ -r "$CATALINA_HOME/bin/setenv.sh" ]; then
+  . "$CATALINA_HOME/bin/setenv.sh"
+fi
+
+start(){
+  echo -n $"Starting $TOMCAT_PROG: "
+  if [ -e /var/lock/subsys/$NAME ]; then
+    if [ -e /var/run/$NAME.pid ] && [ -e /proc/`cat /var/run/$NAME.pid` ]; then
+      echo -n $"cannot start $NAME: $NAME is already running.";
+      failure $"cannot start $NAME: $NAME already running.";
+      echo
+      return 1
+    fi
+  fi
+  /bin/sh $CATALINA_HOME/bin/startup.sh
+  RETVAL="$?"
+  echo
+  [ $RETVAL -eq 0 ] && touch /var/lock/subsys/$NAME
+  return $RETVAL
+} 
+
+stop(){
+  echo -n $"Stopping $TOMCAT_PROG: "
+  if [ ! -e /var/lock/subsys/$NAME ]; then
+    echo -n $"cannot stop $NAME: $NAME is not running."
+    failure $"cannot stop $NAME: $NAME is not running."
+    echo
+    return 1;
+  fi
+  /bin/sh $CATALINA_HOME/bin/shutdown.sh
+  RETVAL="$?"
+  echo
+  [ $RETVAL -eq 0 ] && rm -f /var/lock/subsys/$NAME;
+  return $RETVAL
+}
+
+rhstatus() {
+  status $NAME
+}
+
+restart(){
+  stop
+  sleep 10
+  start
+}
+
+version(){
+  $CATALINA_HOME/bin/version.sh
+}
+
+case $1 in
+  start)
+    start
+    ;;
+  stop)
+    stop
+    ;;
+  restart)
+    restart
+    ;;
+
+  status)
+    rhstatus
+    ;;
+
+  version)
+    version
+    ;;
+  *)
+    echo $"Usage: $0 {start|stop|status|restart|version}"
+    exit 1
+esac

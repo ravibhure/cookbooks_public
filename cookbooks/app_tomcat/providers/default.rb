@@ -7,7 +7,7 @@
 
 action :stop do
   log "  Running stop sequence"
-  service "tomcat6" do
+  service "tomcat7" do
     action :stop
     persist false
   end
@@ -15,7 +15,7 @@ end
 
 action :start do
   log "  Running start sequence"
-  service "tomcat6" do
+  service "tomcat7" do
     action :start
     persist false
   end
@@ -38,6 +38,58 @@ action :install do
     log "installing #{p}"
     package p
 
+    cookbook_file "/tmp/apache-tomcat-#{node[:tomcat][:version]}.tar.gz" do
+      source "apache-tomcat-#{node[:tomcat][:version]}.tar.gz"
+      cookbook 'app_tomcat'
+      not_if { ::FileTest.exists?("/tmp/apache-tomcat-#{node[:tomcat][:version]}.tar.gz") }
+    end
+
+    tomcat_base="/usr/share/apache-tomcat-#{node[:tomcat][:version]}"
+    execute "Untar apache-tomcat-#{node[:tomcat][:version]}" do
+      command "tar -xzf /tmp/apache-tomcat-#{node[:tomcat][:version]}.tar.gz -C /usr/share/"
+      not_if "test -d tomcat_base"
+    end
+  
+    log "  Setting apache tomcat7 init script"
+    template "/etc/init.d/tomcat7" do
+      source "tomcat_init.erb"
+      group "root"
+      owner "root"      
+      mode "0755"
+      variables :version => node[:tomcat][:version]
+      cookbook 'app_tomcat'
+    end        
+    
+    case node[:platform]
+      when "ubuntu", "debian"
+        bash "adduser_for_tomcat_7" do
+          code <<-EOH
+            grep "^#{node[:tomcat][:app_user]}:" /etc/passwd > /dev/null
+            if [ $? != 0 ]; then
+                addgroup #{node[:tomcat][:app_user]}
+                adduser --system --home /usr/share/apache-tomcat-#{node[:tomcat][:version]} --shell /bin/sh --ingroup #{node[:tomcat][:app_user]} #{node[:tomcat][:app_user]} 
+                chown -R #{node[:tomcat][:app_user]}:#{node[:tomcat][:app_user]} /usr/share/apache-tomcat-#{node[:tomcat][:version]}
+            else
+                echo "User #{node[:tomcat][:app_user]} already exists, ... do nothing!"
+            fi
+          EOH
+        end
+
+      when "centos","fedora","suse","redhat"
+        bash "adduser_for_tomcat_7" do
+          code <<-EOH
+            grep "^#{node[:tomcat][:app_user]}:" /etc/passwd > /dev/null
+            if [ $? != 0 ]; then
+                useradd -s /bin/sh -d /usr/share/apache-tomcat-#{node[:tomcat][:version]} #{node[:tomcat][:app_user]}
+                chown -R #{node[:tomcat][:app_user]}:#{node[:tomcat][:app_user]} /usr/share/apache-tomcat-#{node[:tomcat][:version]}
+            else
+                echo "User #{node[:tomcat][:app_user]} already exists, ... do nothing!"
+            fi
+          EOH
+        end
+
+    end
+
     # eclipse-ecj and symlink must be installed FIRST
     if p=="eclipse-ecj" || p=="ecj-gcj"
       file "/usr/share/java/ecj.jar" do
@@ -56,24 +108,43 @@ action :install do
     action :run
   end
 
-  # Link mysql-connector plugin to Tomcat6 lib
-  file "/usr/share/tomcat6/lib/mysql-connector-java.jar" do
-    action :delete
+  db_adapter = node[:tomcat][:db_adapter]
+  if db_adapter == "mysql"
+    # Link mysql-connector plugin to Tomcat7 lib
+    file "/usr/share/apache-tomcat-#{node[:tomcat][:version]}/lib/mysql-connector-java.jar" do
+      action :delete
+    end
+
+    link "/usr/share/apache-tomcat-#{node[:tomcat][:version]}/lib/mysql-connector-java.jar" do
+      to "/usr/share/java/mysql-connector-java.jar"
+    end
+  elsif db_adapter == "postgresql"
+    # Copy to /usr/share/java/postgresql-9.1-901.jdbc4.jar
+    remote_file "/usr/share/java/postgresql-9.1-901.jdbc4.jar" do
+      source "postgresql-9.1-901.jdbc4.jar"
+      owner "root"
+      group "root"
+      cookbook 'app_tomcat'
+    end
+    ## Link postgresql-connector plugin to Tomcat7 lib
+    # ln -sf /usr/share/java/postgresql-9.1-901.jdbc4.jar /usr/share/apache-tomcat-#{node[:tomcat][:version]}/lib/postgresql-9.1-901.jdbc4.jar
+    # todo: if /usr/share/apache-tomcat-#{node[:tomcat][:version]}/lib/postgresql-9.1-901.jdbc4.jar exists delete it first
+    link "/usr/share/apache-tomcat-#{node[:tomcat][:version]}/lib/postgresql-9.1-901.jdbc4.jar" do
+      to "/usr/share/java/postgresql-9.1-901.jdbc4.jar"
+    end
+  else
+    raise "Unrecognized database adapter #{node[:tomcat][:db_adapter]}, exiting "
   end
 
-  link "/usr/share/tomcat6/lib/mysql-connector-java.jar" do
-    to "/usr/share/java/mysql-connector-java.jar"
-  end
-
-  # "Linking RightImage JAVA_HOME to what Tomcat6 expects to be..."
+  # "Linking RightImage JAVA_HOME to what Tomcat7 expects to be..."
   link "/usr/lib/jvm/java" do
     to "/usr/java/default"
   end
 
 
   # Moving tomcat logs to mnt
-  if ! ::File.directory?("/mnt/log/tomcat6")
-    directory "/mnt/log/tomcat6" do
+  if ! ::File.directory?("/mnt/log/tomcat7")
+    directory "/mnt/log/tomcat7" do
       owner node[:tomcat][:app_user]
       group node[:tomcat][:app_user]
       mode "0755"
@@ -81,13 +152,13 @@ action :install do
       recursive true
     end
 
-    directory "/var/log/tomcat6" do
+    directory "/usr/share/apache-tomcat-#{node[:tomcat][:version]}/logs" do
       action :delete
       recursive true
     end
 
-    link "/var/log/tomcat6" do
-      to "/mnt/log/tomcat6"
+    link "/usr/share/apache-tomcat-#{node[:tomcat][:version]}/logs" do
+      to "/mnt/log/tomcat7"
     end
   end
 
@@ -119,15 +190,16 @@ end
 # Setup apache virtual host and corresponding tomcat configs
 action :setup_vhost do
 
-  log "  Creating tomcat6.conf"
-  template "/etc/tomcat6/tomcat6.conf" do
+  log "  Creating setenv.sh"
+  template "/usr/share/apache-tomcat-#{node[:tomcat][:version]}/bin/setenv.sh" do
     action :create
-    source "tomcat6_conf.erb"
+    source "setenv.sh.erb"
     group "root"
-    owner "root"
-    mode "0644"
+    owner "#{node[:tomcat][:app_user]}"
+    mode "0755"
     cookbook 'app_tomcat'
     variables(
+      :version => node[:tomcat][:version],
       :app_user => node[:tomcat][:app_user],
       :java_xms => node[:tomcat][:java][:xms],
       :java_xmx => node[:tomcat][:java][:xms],
@@ -139,7 +211,7 @@ action :setup_vhost do
   end
 
   log "  Creating server.xml"
-  template "/etc/tomcat6/server.xml" do
+  template "/usr/share/apache-tomcat-#{node[:tomcat][:version]}/conf/server.xml" do
     action :create
     source "server_xml.erb"
     group "root"
@@ -153,12 +225,11 @@ action :setup_vhost do
   end
 
   log "  Setup logrotate for tomcat"
-  template "/etc/logrotate.d/tomcat6" do
-    source "tomcat6_logrotate.conf.erb"
-    variables :tomcat_name => "tomcat6"
+  template "/etc/logrotate.d/tomcat7" do
+    source "tomcat7_logrotate.conf.erb"
+    variables :version => node[:tomcat][:version]
     cookbook 'app_tomcat'
   end
-
 
     action_start
 
@@ -217,11 +288,11 @@ action :setup_vhost do
     end
 
     # Configure workers.properties for mod_jk
-    template "/etc/tomcat6/workers.properties" do
+    template "/usr/share/apache-tomcat-#{node[:tomcat][:version]}/conf/workers.properties" do
       action :create
       source "tomcat_workers.properties.erb"
       variables(
-      :tomcat_name => "tomcat6",
+      :version => node[:tomcat][:version],
       :config_subdir => node[:apache][:config_subdir]
       )
       cookbook 'app_tomcat'
@@ -232,7 +303,7 @@ action :setup_vhost do
       action :create
       backup false
       source "mod_jk.conf.erb"
-      variables :tomcat_name => "tomcat6"
+      variables :version => node[:tomcat][:version]
       cookbook 'app_tomcat'
     end
 
@@ -298,19 +369,33 @@ end
 action :setup_db_connection do
 
   db_name = new_resource.database_name
-
+  db_adapter = node[:tomcat][:db_adapter]
+  
   log "  Creating context.xml"
-  db_mysql_connect_app "/etc/tomcat6/context.xml"  do
-    template      "context_xml.erb"
-    owner         "#{node[:tomcat][:app_user]}"
-    group         "root"
-    mode          "0644"
-    database      db_name
-    cookbook      'app_tomcat'
+  if db_adapter == "mysql"  
+    db_mysql_connect_app "/usr/share/apache-tomcat-#{node[:tomcat][:version]}/conf/context.xml"  do
+      template      "context_xml.erb"
+      owner         "#{node[:tomcat][:app_user]}"
+      group         "root"
+      mode          "0644"
+      database      db_name
+      cookbook      'app_tomcat'
+    end
+  elsif db_adapter == "postgresql"  
+    db_postgres_connect_app "/usr/share/apache-tomcat-#{node[:tomcat][:version]}/conf/context.xml"  do
+      template      "context_xml.erb"
+      owner         "#{node[:tomcat][:app_user]}"
+      group         "root"
+      mode          "0644"
+      database      db_name
+      cookbook      'app_tomcat'
+    end
+  else
+    raise "Unrecognized database adapter #{node[:tomcat][:db_adapter]}, exiting "
   end
 
-  log "  Creating context.xml"
-  template "/etc/tomcat6/web.xml" do
+  log "  Creating web.xml"
+  template "/usr/share/apache-tomcat-#{node[:tomcat][:version]}/conf/web.xml" do
     source "web_xml.erb"
     owner "#{node[:tomcat][:app_user]}"
     group "root"
@@ -318,7 +403,7 @@ action :setup_db_connection do
     cookbook 'app_tomcat'
   end
 
-  cookbook_file "/usr/share/tomcat6/lib/jstl-api-1.2.jar" do
+  cookbook_file "/usr/share/apache-tomcat-#{node[:tomcat][:version]}/lib/jstl-api-1.2.jar" do
     source "jstl-api-1.2.jar"
     owner "#{node[:tomcat][:app_user]}"
     group "root"
@@ -327,7 +412,7 @@ action :setup_db_connection do
   end
 
 
-  cookbook_file "/usr/share/tomcat6/lib/jstl-impl-1.2.jar" do
+  cookbook_file "/usr/share/apache-tomcat-#{node[:tomcat][:version]}/lib/jstl-impl-1.2.jar" do
     source "jstl-impl-1.2.jar"
     owner "#{node[:tomcat][:app_user]}"
     group "root"
@@ -350,20 +435,20 @@ action :setup_monitoring do
   end
 
   #Linking collectd
-  link "/usr/share/tomcat6/lib/collectd.jar" do
+  link "/usr/share/apache-tomcat-#{node[:tomcat][:version]}/lib/collectd.jar" do
     to "/usr/share/java/collectd.jar"
     not_if do !::File.exists?("/usr/share/java/collectd.jar") end
   end
 
-  #Add collectd support to tomcat.conf
-  bash "Add collectd to tomcat.conf" do
+  #Add collectd support to setenv.sh
+  bash "Add collectd to setenv" do
     flags "-ex"
     code <<-EOH
-      cat <<EOF>>/etc/tomcat6/tomcat6.conf
-      CATALINA_OPTS="\$CATALINA_OPTS -Djcd.host=#{node[:rightscale][:instance_uuid]} -Djcd.instance=tomcat6 -Djcd.dest=udp://#{node[:rightscale][:servers][:sketchy][:hostname]}:3011 -Djcd.tmpl=javalang,tomcat -javaagent:/usr/share/tomcat6/lib/collectd.jar"
+    echo  'CATALINA_OPTS="\$CATALINA_OPTS -Djcd.host=#{node[:rightscale][:instance_uuid]} -Djcd.instance=tomcat7 -Djcd.dest=udp://#{node[:rightscale][:servers][:sketchy][:hostname]}:3011 -Djcd.tmpl=javalang,tomcat -javaagent:/usr/share/apache-tomcat-#{node[:tomcat][:version]}/lib/collectd.jar"' >> /usr/share/apache-tomcat-#{node[:tomcat][:version]}/bin/setenv.sh
     EOH
   end
 
+  action_restart
 
 end
 
@@ -377,13 +462,13 @@ action :code_update do
   # Reading app name from tmp file (for execution in "operational" phase))
   # Waiting for "run_lists"
   deploy_dir = node[:tomcat][:docroot]
-  if(deploy_dir == "/srv/tomcat6/webapps/")
+  if(deploy_dir == "/usr/share/apache-tomcat-#{node[:tomcat][:version]}/webapps/")
     app_name = IO.read('/tmp/appname')
-    deploy_dir = "/srv/tomcat6/webapps/#{app_name.to_s.chomp}"
+    deploy_dir = "/usr/share/apache-tomcat-#{node[:tomcat][:version]}/webapps/#{app_name.to_s.chomp}"
 
   end
 
-  directory "/srv/tomcat6/webapps/" do
+  directory "/usr/share/apache-tomcat-#{node[:tomcat][:version]}/webapps/" do
     recursive true
   end
 
@@ -414,5 +499,3 @@ action :code_update do
   node[:delete_docroot_executed] = true
 
 end
-
-

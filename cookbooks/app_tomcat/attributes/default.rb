@@ -8,6 +8,7 @@
 # Recommended attributes
 set_unless[:tomcat][:server_name] = node[:web_apache][:server_name]
 set_unless[:tomcat][:application_name] = node[:web_apache][:application_name]
+
 set_unless[:tomcat][:code][:root_war] = ""
 set_unless[:tomcat][:java][:permsize] = "256m"
 set_unless[:tomcat][:java][:maxpermsize] = "256m"
@@ -15,23 +16,34 @@ set_unless[:tomcat][:java][:newsize] = "256m"
 set_unless[:tomcat][:java][:maxnewsize] = "256m"
 
 set[:tomcat][:module_dependencies] = [ "proxy", "proxy_http", "deflate", "rewrite"]
+set_unless[:tomcat][:db_adapter] = "postgresql"
 
-# This docroot is currently symlinked from /usr/share/tomcat6/webapps
-set[:tomcat][:docroot] = "/srv/tomcat6/webapps/#{node[:tomcat][:application_name]}"
+set[:tomcat][:version] = "7.0.26"
+set[:tomcat][:docroot] = "/usr/share/apache-tomcat-#{node[:tomcat][:version]}/webapps/#{node[:tomcat][:application_name]}"
 
 # Calculated attributes
 case node[:platform]
 
   when "ubuntu", "debian"
-    set[:tomcat][:app_user] = "tomcat6"
-    set[:db_mysql][:socket] = "/var/run/mysqld/mysqld.sock"
-    set[:tomcat][:alternatives_cmd] = "update-alternatives  --auto java"
-
+    set[:tomcat][:app_user] = "tomcat7"
+    set[:tomcat][:alternatives_cmd] = "update-alternatives --auto java"
+    if(tomcat[:db_adapter] == "mysql")
+      set[:db_mysql][:socket] = "/var/run/mysqld/mysqld.sock"
+    elsif(tomcat[:db_adapter] == "postgresql")
+      set[:db_postgres][:socket] = "/var/run/postgresql"
+    else
+      raise "Unrecognized database adapter #{node[:tomcat][:db_adapter]}, exiting "
+    end
   when "centos", "fedora", "suse", "redhat", "redhatenterpriseserver"
     set[:tomcat][:app_user] = "tomcat"
-    set[:db_mysql][:socket] = "/var/lib/mysql/mysql.sock"
     set[:tomcat][:alternatives_cmd] = "alternatives --auto java"
+    if(tomcat[:db_adapter] == "mysql")
+      set[:db_mysql][:socket] = "/var/lib/mysql/mysql.sock"
+    elsif(tomcat[:db_adapter] == "postgresql")
+      set[:db_postgres][:socket] = "/var/run/postgresql"
+    else
+      raise "Unrecognized database adapter #{node[:tomcat][:db_adapter]}, exiting "
+    end
   else
     raise "Unrecognized distro #{node[:platform]}, exiting "
 end
-
