@@ -146,6 +146,22 @@ action :install_client do
     raise "ERROR:: Unrecognized distro #{node[:platform]}, exiting "
   end
 
+  # The entry in the profile.d will be
+  # used for future logins.
+  # The setting needs to be in place before postgresql-9.1 is started.
+  #  
+  template "/etc/profile.d/pg.sh" do
+    action :create
+    source "pg.sh.erb"
+    group "root"
+    owner "root"
+    mode "0755"
+    cookbook 'db_postgres'
+    variables(
+            :version => node[:db_postgres][:version]
+          )
+  end
+
   # == Install PostgreSQL client gem
   gem_package("pg") do
     gem_binary("/opt/rightscale/sandbox/bin/gem")
