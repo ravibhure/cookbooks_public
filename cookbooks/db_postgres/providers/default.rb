@@ -107,12 +107,12 @@ action :set_privileges do
   priv_password = new_resource.privilege_password
   priv_database = new_resource.privilege_database
   db_postgres_set_privileges "setup db privileges" do
+    not_if "test -f #{node[:db_postgres][:confdir]}/recovery.conf"
     preset priv
     username priv_username
     password priv_password
     database priv_database
   end
-  not_if "test -f #{node[:db_postgres][:confdir]}/recovery.conf"
 end
 
 action :install_client do
