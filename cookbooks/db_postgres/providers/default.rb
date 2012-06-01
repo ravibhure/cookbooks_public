@@ -111,8 +111,8 @@ action :set_privileges do
     username priv_username
     password priv_password
     database priv_database
-    not_if "test -f #{node[:db_postgres][:confdir]}/recovery.conf"
   end
+  not_if "test -f #{node[:db_postgres][:confdir]}/recovery.conf"
 end
 
 action :install_client do
