@@ -102,7 +102,7 @@ action :post_backup_cleanup do
 end
 
 action :set_privileges do
-  if File.exist?("/var/lib/pgsql/9.1/data/recovery.conf")
+  if ::File.exist?("/var/lib/pgsql/9.1/data/recovery.conf")
     Chef::Log.info("no need to rerun on reboot for slave")
   else
     priv = new_resource.privilege
