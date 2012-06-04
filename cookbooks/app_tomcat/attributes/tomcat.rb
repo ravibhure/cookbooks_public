@@ -16,7 +16,7 @@ set_unless[:tomcat][:java][:newsize] = "256m"
 set_unless[:tomcat][:java][:maxnewsize] = "256m"
 
 set[:tomcat][:module_dependencies] = [ "proxy", "proxy_http", "deflate", "rewrite"]
-set_unless[:tomcat][:db_adapter] = "postgresql"
+set_unless[:tomcat][:db_adapter] = node[:app][:db_adapter]
 
 set[:tomcat][:version] = "7.0.26"
 set[:tomcat][:docroot] = "/usr/share/apache-tomcat-#{node[:tomcat][:version]}/webapps/#{node[:tomcat][:application_name]}"
