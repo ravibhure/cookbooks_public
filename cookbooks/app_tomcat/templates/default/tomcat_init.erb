@@ -63,9 +63,9 @@ stop(){
 rhstatus() {
   <% case node[:platform]
     when "ubuntu", "debian" %>
-    status $NAME
-  <%  when "centos", "fedora", "suse", "redhat", "redhatenterpriseserver" %>
     status_of_proc $NAME
+  <%  when "centos", "fedora", "suse", "redhat", "redhatenterpriseserver" %>
+    status $NAME
   <% end -%>
 }
 
