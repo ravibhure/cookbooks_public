@@ -7,7 +7,11 @@
 # DO NOT EDIT BY HAND
 #
 
-. /etc/init.d/functions
+if [ -f "/etc/init.d/functions" ]; then
+  . /etc/init.d/functions
+elif [ -f "/lib/lsb/init-functions" ]; then
+  . /lib/lsb/init-functions
+fi
 
 TOMCAT_PROG="$(basename $0)"
 NAME="$TOMCAT_PROG"
@@ -56,7 +60,11 @@ stop(){
 }
 
 rhstatus() {
-  status $NAME
+  if [ -f "/etc/init.d/functions" ]; then
+    status $NAME
+  elif [ -f "/lib/lsb/init-functions" ]; then
+    status_of_proc $NAME
+  fi
 }
 
 restart(){
