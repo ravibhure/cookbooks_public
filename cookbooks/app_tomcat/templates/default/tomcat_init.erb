@@ -7,11 +7,12 @@
 # DO NOT EDIT BY HAND
 #
 
-if [ -f "/etc/init.d/functions" ]; then
-  . /etc/init.d/functions
-elif [ -f "/lib/lsb/init-functions" ]; then
-  . /lib/lsb/init-functions
-fi
+<% case node[:platform]
+    when "ubuntu", "debian" %>
+      . /lib/lsb/init-functions
+<%  when "centos", "fedora", "suse", "redhat", "redhatenterpriseserver" %>
+      . /etc/init.d/functions
+<% end -%>
 
 TOMCAT_PROG="$(basename $0)"
 NAME="$TOMCAT_PROG"
@@ -60,11 +61,12 @@ stop(){
 }
 
 rhstatus() {
-  if [ -f "/etc/init.d/functions" ]; then
+  <% case node[:platform]
+    when "ubuntu", "debian" %>
     status $NAME
-  elif [ -f "/lib/lsb/init-functions" ]; then
+  <%  when "centos", "fedora", "suse", "redhat", "redhatenterpriseserver" %>
     status_of_proc $NAME
-  fi
+  <% end -%>
 }
 
 restart(){
