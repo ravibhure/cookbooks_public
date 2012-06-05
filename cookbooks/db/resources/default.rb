@@ -232,5 +232,10 @@ add_action :promote
 # This is called when a slave is initialized.
 add_action :grant_replication_slave
 
+# == Enable slave Replication
+# Configures and start a slave replicating from master
+add_action :enable_slave
+
+
 actions @action_list
 
