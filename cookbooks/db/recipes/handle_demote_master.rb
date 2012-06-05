@@ -31,7 +31,7 @@ ruby_block "set slave state" do
 end
 
 db DATA_DIR do
-  action :enable_replication
+  action :enable_slave
 end
 
 rs_utils_marker :end

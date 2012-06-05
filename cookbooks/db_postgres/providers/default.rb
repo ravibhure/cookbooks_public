@@ -297,6 +297,37 @@ action :grant_replication_slave do
   conn.finish
 end
 
+action :enable_slave do
+
+  newmaster_host = node[:db][:current_master_ip] 
+  rep_user = node[:db][:replication][:user]
+  rep_pass = node[:db][:replication][:password]
+  app_name = node[:rightscale][:instance_uuid]
+
+  master_info = RightScale::Database::PostgreSQL::Helper.load_replication_info(node)
+
+  # Stoping Postgresql service
+  action_stop
+
+  # Sync to Master data
+  RightScale::Database::PostgreSQL::Helper.rsync_db(newmaster_host, rep_user)
+
+
+  # Setup recovery conf
+  RightScale::Database::PostgreSQL::Helper.reconfigure_replication_info(newmaster_host, rep_user, rep_pass, app_name)
+
+  Chef::Log.info "Wiping existing runtime config files"
+  `rm -rf "#{node[:db][:datadir]}/pg_xlog/*" #{node[:db][:datadir]}/recovery*`
+
+  # ensure_db_started
+  # service provider uses the status command to decide if it
+  # has to run the start command again.
+  5.times do
+      action_start
+  end
+
+end
+
 action :enable_replication do
 
   newmaster_host = node[:db][:current_master_ip]

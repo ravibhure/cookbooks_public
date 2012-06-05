@@ -218,6 +218,7 @@ add_action :setup_monitoring
 # == Enable Replication
 # Configures and start a slave replicating from master
 add_action :enable_replication
+add_action :enable_slave
 
 # == Promote
 # Promotes a slave server to the master server.
