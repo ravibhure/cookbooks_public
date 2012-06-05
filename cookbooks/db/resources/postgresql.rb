@@ -7,10 +7,11 @@
 
 # Add actions to @action_list array.
 # Used to allow comments between entries.
-
-# == Enable slave Replication
-# Configures and start a slave replicating from master
-add_action :enable_slave
+def self.add_action(sym)
+  @action_list ||= Array.new
+  @action_list << sym unless @action_list.include?(sym)
+  @action_list
+end
 
 # = Database Attributes
 #
@@ -45,3 +46,9 @@ attribute :db_name, :kind_of => String
 
 #attribute :name, :kind_of => String, :name_attribute => true
 #attribute :type, :kind_of => String
+
+# == Enable slave Replication
+# Configures and start a slave replicating from master
+add_action :enable_slave
+
+actions @action_list
