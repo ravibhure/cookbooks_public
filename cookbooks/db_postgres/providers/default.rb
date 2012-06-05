@@ -317,7 +317,7 @@ action :enable_slave do
   RightScale::Database::PostgreSQL::Helper.reconfigure_replication_info(newmaster_host, rep_user, rep_pass, app_name)
 
   Chef::Log.info "Wiping existing runtime config files"
-  `rm -rf "#{node[:db][:datadir]}/pg_xlog/*" #{node[:db][:datadir]}/recovery*`
+  `rm -rf "#{node[:db][:datadir]}/pg_xlog/*" "#{node[:db][:datadir]}/recovery*"`
 
   # ensure_db_started
   # service provider uses the status command to decide if it

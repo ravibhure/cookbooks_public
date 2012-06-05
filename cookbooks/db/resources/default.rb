@@ -218,7 +218,6 @@ add_action :setup_monitoring
 # == Enable Replication
 # Configures and start a slave replicating from master
 add_action :enable_replication
-add_action :enable_slave
 
 # == Promote
 # Promotes a slave server to the master server.
@@ -226,6 +225,10 @@ add_action :enable_slave
 # This is called when a new master is needed.  If the prior master is still
 # functioning it is configured as a slave.
 add_action :promote
+
+# == Enable slave Replication
+# Configures and start a slave replicating from master
+add_action :enable_slave
 
 # == Grant Replication Slave
 # Set database replication priviliges for a slave.
