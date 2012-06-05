@@ -7,6 +7,8 @@
 
 rs_utils_marker :begin
 
+DATA_DIR = node[:db][:data_dir]
+
 # == Clear master tag
 #
 unique_tag = "rs_dbrepl:master_instance_uuid=#{node[:rightscale][:instance_uuid]}"
@@ -26,6 +28,10 @@ ruby_block "set slave state" do
     node[:db][:current_master_ip] = master_ip
     node[:db][:this_is_master] = false
   end
+end
+
+db DATA_DIR do
+  action :enable_replication
 end
 
 rs_utils_marker :end
