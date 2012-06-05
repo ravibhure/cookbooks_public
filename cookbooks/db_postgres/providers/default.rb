@@ -309,15 +309,17 @@ action :enable_slave do
   # Stoping Postgresql service
   action_stop
 
+  # Delete existing backup files from data folder
+  `rm -rf "#node[:db_postgres][:basedir]/backups/*"`
+
   # Sync to Master data
   RightScale::Database::PostgreSQL::Helper.rsync_db(newmaster_host, rep_user)
-
 
   # Setup recovery conf
   RightScale::Database::PostgreSQL::Helper.reconfigure_replication_info(newmaster_host, rep_user, rep_pass, app_name)
 
   Chef::Log.info "Wiping existing runtime config files"
-  `rm -rf "#{node[:db][:datadir]}/pg_xlog/*" "#{node[:db][:datadir]}/recovery*"`
+  `rm -rf "#{node[:db][:datadir]}/pg_xlog/*" "#{node[:db][:datadir]}/recovery.done"`
 
   # ensure_db_started
   # service provider uses the status command to decide if it
