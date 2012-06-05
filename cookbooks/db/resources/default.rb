@@ -226,10 +226,6 @@ add_action :enable_replication
 # functioning it is configured as a slave.
 add_action :promote
 
-# == Enable slave Replication
-# Configures and start a slave replicating from master
-add_action :enable_slave
-
 # == Grant Replication Slave
 # Set database replication priviliges for a slave.
 #
