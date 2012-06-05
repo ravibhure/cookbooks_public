@@ -518,6 +518,8 @@ action :promote do
   end
 end
 
+action :enable_slave do
+end
 
 action :enable_replication do
 
