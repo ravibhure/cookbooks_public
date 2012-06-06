@@ -304,12 +304,12 @@ action :enable_slave do
   rep_pass = node[:db][:replication][:password]
   app_name = node[:rightscale][:instance_uuid]
 
-  # Stoping Postgresql service
-  action_stop
-
   # Delete existing backup files from data folder
   Chef::Log.info "Wiping existing backup files if any"
   `rm -rf "#{node[:db_postgres][:basedir]}/backups/*"`
+
+  # Stoping Postgresql service
+  action_stop
 
   # Sync to Master data
   RightScale::Database::PostgreSQL::Helper.rsync_db(newmaster_host, rep_user)
@@ -406,6 +406,22 @@ action :promote do
   rescue => e
     Chef::Log.info "WARNING: caught exception #{e} during critical operations on the MASTER"
   end
+
+  # Remove the old-slave monitoring
+  ruby_block "wipe old slave monitoring files" do
+    block do
+      require 'fileutils'
+      remove_files = ::Dir.glob(::File.join(node[:rs_utils][:collectd_lib], "plugins", 'pg_cluster_status')) + ::Dir.glob(::File.join(node[:rs_utils][:collectd_plugin_dir], 'pg_cluster_status.conf')) + ::Dir.glob(::File.join(node[:rs_utils][:collectd_lib], "plugins", 'check_hot_standby_delay')) + ::Dir.glob(::File.join(node[:rs_utils][:collectd_plugin_dir], 'check_hot_standby_delay.conf'))
+      FileUtils.rm_rf(remove_files)
+    end
+  end
+
+
+  service "collectd" do
+    supports :restart => true, :reload => true
+    action [ :enable, :restart ]
+  end
+
 end
 
 action :setup_monitoring do
