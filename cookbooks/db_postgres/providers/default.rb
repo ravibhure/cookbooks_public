@@ -312,7 +312,7 @@ action :enable_slave do
 #  `rm -rf "#node[:db_postgres][:basedir]/backups/*"`
 
   # Sync to Master data
-  RightScale::Database::PostgreSQL::Helper.rsync_db(newmaster_host, rep_user)
+#  RightScale::Database::PostgreSQL::Helper.rsync_db(newmaster_host, rep_user)
 
   Chef::Log.info "Wiping existing runtime config files"
   `rm -rf "#{node[:db][:datadir]}/pg_xlog/*" "#{node[:db][:datadir]}/recovery*"`
