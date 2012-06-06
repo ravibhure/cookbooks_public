@@ -306,7 +306,7 @@ action :enable_slave do
 
   # Delete existing backup files from data folder
   Chef::Log.info "Wiping existing backup files if any"
-  `rm -rf "#{node[:db_postgres][:basedir]}/backups/*"`
+  `rm -rf /var/lib/pgsql/9.1/backups/*`
 
   # Stoping Postgresql service
   action_stop
@@ -408,6 +408,7 @@ action :promote do
   end
 
   # Remove the old-slave monitoring
+  Chef::Log.info  "Removing slave monitoring files."
   ruby_block "wipe old slave monitoring files" do
     block do
       require 'fileutils'
