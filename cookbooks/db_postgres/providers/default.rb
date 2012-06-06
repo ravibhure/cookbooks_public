@@ -308,8 +308,8 @@ action :enable_slave do
   action_stop
 
   # Delete existing backup files from data folder
-  Chef::Log.info "Wiping existing backup files if any"
-  `rm -rf "#node[:db_postgres][:basedir]/backups/*"`
+#  Chef::Log.info "Wiping existing backup files if any"
+#  `rm -rf "#node[:db_postgres][:basedir]/backups/*"`
 
   # Sync to Master data
   RightScale::Database::PostgreSQL::Helper.rsync_db(newmaster_host, rep_user)
