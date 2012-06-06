@@ -315,7 +315,7 @@ action :enable_slave do
   RightScale::Database::PostgreSQL::Helper.rsync_db(newmaster_host, rep_user)
 
   Chef::Log.info "Wiping existing runtime config files"
-  `rm -f "#{node[:db][:datadir]}/pg_xlog/*"`
+  `rm -fr "#{node[:db][:datadir]}/pg_xlog/*"`
 
   # Setup recovery conf
   RightScale::Database::PostgreSQL::Helper.reconfigure_replication_info(newmaster_host, rep_user, rep_pass, app_name)
