@@ -71,7 +71,7 @@ action :install do
     # Copy to /usr/share/java/postgresql-9.1-901.jdbc4.jar
     remote_file "/usr/share/java/postgresql-9.1-901.jdbc4.jar" do
       source "postgresql-9.1-901.jdbc4.jar"
-      owner "root"
+      owner node[:tomcat][:app_user]
       group "root"
       cookbook 'app_tomcat'
     end

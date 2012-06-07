@@ -144,6 +144,11 @@ action :install_client do
     raise "ERROR:: Unrecognized distro #{node[:platform]}, exiting "
   end
 
+  ## Link postgresql pg_config to default system bin path - required by app servers
+  execute "ln -s /usr/pgsql-#{node[:db_postgres][:version]}/bin/pg_config /usr/bin/" do
+    not_if "test -f /usr/bin/pg_config"
+  end
+
   # == Install PostgreSQL client gem
   gem_package("pg") do
     gem_binary("/opt/rightscale/sandbox/bin/gem")
@@ -183,9 +188,9 @@ action :install_server do
   ruby 'move_postgresql_backup' do
     not_if do File.symlink?(node[:db_postgres][:basedir]/backups) end
     code <<-EOH
-      `rm -rf #{node[:db_postgres][:basedir]/backups}`
+      `rm -rf "#{node[:db_postgres][:basedir]/backups}"`
       `mkdir -p /mnt/backups`
-      `ln -s /mnt/backups #{node[:db_postgres][:basedir]/backups}`
+      `ln -s /mnt/backups "#{node[:db_postgres][:basedir]/backups}"`
       `chown -R postgres:postgres /mnt/backups`
     EOH
   end
