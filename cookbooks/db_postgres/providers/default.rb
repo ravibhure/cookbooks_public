@@ -187,7 +187,7 @@ action :install_server do
   ## Move PostgreSQL base backup dir
   backup_dir = "#{node[:db_postgres][:basedir]}/backups"
   ruby "move_postgresql_backup" do
-    not_if do File.symlink?(backup_dir) end
+    not_if do ::File.symlink?(backup_dir) end
     code <<-EOH
       `rm -rf #{backup_dir}`
       `mkdir -p /mnt/backups`
