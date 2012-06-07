@@ -179,6 +179,17 @@ action :install_server do
     action :stop
   end
 
+  ## Move PostgreSQL base backup dir
+  ruby 'move_postgresql_backup' do
+    not_if do File.symlink?(node[:db_postgres][:basedir]/backups) end
+    code <<-EOH
+      `rm -rf #{node[:db_postgres][:basedir]/backups}`
+      `mkdir -p /mnt/backups`
+      `ln -s /mnt/backups #{node[:db_postgres][:basedir]/backups}`
+      `chown -R postgres:postgres /mnt/backups`
+    EOH
+  end
+
   # Initialize PostgreSQL server and create system tables
   touchfile = ::File.expand_path "~/.postgresql_installed"
   execute "/etc/init.d/postgresql-#{node[:db_postgres][:version]} initdb ; touch #{touchfile}" do
