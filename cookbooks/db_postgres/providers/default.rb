@@ -306,7 +306,8 @@ action :enable_slave do
 
   # Delete existing backup files from data folder
   Chef::Log.info "Wiping existing backup files if any"
-  `rm -rf /var/lib/pgsql/9.1/backups/*`
+  # `rm -rf /var/lib/pgsql/9.1/backups/*`
+  `rm -rf "#{node[:db_postgres][:basedir]}/backups/*`
 
   # Stoping Postgresql service
   action_stop
