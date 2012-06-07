@@ -102,7 +102,7 @@ action :post_backup_cleanup do
 end
 
 action :set_privileges do
-  if ::File.exist?("/var/lib/pgsql/9.1/data/recovery.conf")
+  if ::File.exist?("#{node[:db_postgres][:datadir]}/recovery.conf")
     Chef::Log.info("no need to rerun on reboot for slave")
   else
     priv = new_resource.privilege
@@ -185,12 +185,13 @@ action :install_server do
   end
 
   ## Move PostgreSQL base backup dir
-  ruby 'move_postgresql_backup' do
-    not_if do File.symlink?(node[:db_postgres][:basedir]/backups) end
+  backup_dir = "#{node[:db_postgres][:basedir]}/backups"
+  ruby "move_postgresql_backup" do
+    not_if do File.symlink?(backup_dir) end
     code <<-EOH
-      `rm -rf "#{node[:db_postgres][:basedir]/backups}"`
+      `rm -rf #{backup_dir}`
       `mkdir -p /mnt/backups`
-      `ln -s /mnt/backups "#{node[:db_postgres][:basedir]/backups}"`
+      `ln -s /mnt/backups #{backup_dir}`
       `chown -R postgres:postgres /mnt/backups`
     EOH
   end
@@ -332,7 +333,7 @@ action :enable_slave do
   RightScale::Database::PostgreSQL::Helper.rsync_db(newmaster_host, rep_user)
 
   Chef::Log.info "Wiping existing runtime config files"
-  `rm -fr "#{node[:db][:datadir]}/pg_xlog/*"`
+  `rm -fr "#{node[:db][:datadir]}/pg_xlog/*" "#{node[:db_postgres][:basedir]}/backups/*"`
 
   # Setup recovery conf
   RightScale::Database::PostgreSQL::Helper.reconfigure_replication_info(newmaster_host, rep_user, rep_pass, app_name)
@@ -376,7 +377,7 @@ action :enable_replication do
 
 
   Chef::Log.info "Wiping existing runtime config files"
-  `rm -rf "#{node[:db][:datadir]}/pg_xlog/*"`
+  `rm -rf "#{node[:db][:datadir]}/pg_xlog/*" "#{node[:db_postgres][:basedir]}/backups/*"`
 
 
 
